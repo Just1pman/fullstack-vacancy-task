@@ -79,14 +79,56 @@
 - Сервер не должен доверять валидации на frontend: входящие данные необходимо проверять на backend.
 - Код должен быть читаемым и разделённым по ответственности без избыточной архитектуры.
 
-## Как отправить решение
+## Как опубликовать выполненное задание
 
-1. Сделать fork этого репозитория.
-2. Создать отдельную ветку для решения.
-3. Разместить решение в каталоге `submissions/<github-username>/`.
-4. Открыть Pull Request в ветку `main` исходного репозитория.
+### 1. Создать fork
 
-В Pull Request не нужно добавлять `node_modules`, результаты сборки и другие сгенерированные файлы.
+Нажмите **Fork** на странице этого репозитория, чтобы создать его копию в своём GitHub-аккаунте.
+
+### 2. Клонировать fork
+
+```bash
+git clone git@github.com:<github-username>/fullstack-vacancy-task.git
+cd fullstack-vacancy-task
+```
+
+Вместо `<github-username>` укажите свой GitHub username. При необходимости можно использовать HTTPS-адрес репозитория.
+
+### 3. Создать ветку
+
+```bash
+git checkout -b solution/<github-username>
+```
+
+### 4. Добавить решение
+
+Разместите проект в отдельном каталоге:
+
+```text
+submissions/<github-username>/
+```
+
+Не изменяйте корневой `README.md` и решения других кандидатов.
+
+### 5. Отправить изменения в свой fork
+
+```bash
+git add submissions/<github-username>
+git commit -m "Add solution by <github-username>"
+git push -u origin solution/<github-username>
+```
+
+### 6. Создать Pull Request
+
+На GitHub откройте Pull Request из созданной ветки своего fork в ветку `main` репозитория `Just1pman/fullstack-vacancy-task`.
+
+Название Pull Request:
+
+```text
+Solution: <github-username>
+```
+
+Перед отправкой убедитесь, что проект запускается по инструкции. Не добавляйте `node_modules`, `.env`, секреты, результаты сборки и другие сгенерированные файлы.
 
 ## Что приложить к решению
 
