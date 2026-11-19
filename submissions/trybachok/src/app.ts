@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type OutgoingHttpHeaders, type ServerResponse } from 'node:http';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseNewUser } from './users-create.ts';
 import { parseUserId } from './users-delete.ts';
 import { filterUsersByName, parseNameFilter } from './users-search.ts';
@@ -11,6 +12,10 @@ type UsersStore = ReturnType<typeof createUsersStore>;
 const assets = new Map<string, [filename: string, contentType: string]>([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
+  ['/client/app.js', [fileURLToPath(new URL('./client/app.js', import.meta.url)), 'text/javascript; charset=utf-8']],
+  ['/client/api.js', [fileURLToPath(new URL('./client/api.js', import.meta.url)), 'text/javascript; charset=utf-8']],
+  ['/client/list.js', [fileURLToPath(new URL('./client/list.js', import.meta.url)), 'text/javascript; charset=utf-8']],
+  ['/user-fields.js', [fileURLToPath(new URL('./user-fields.js', import.meta.url)), 'text/javascript; charset=utf-8']],
 ]);
 const usersBodyLimit = 10 * 1024;
 const usersPath = '/api/users';
@@ -36,7 +41,7 @@ async function serveStatic(
 
   const [filename, contentType] = asset;
   try {
-    const content = await readFile(join(publicDir, filename));
+    const content = await readFile(resolve(publicDir, filename));
     response.writeHead(200, {
       'Content-Type': contentType,
       'Content-Length': content.length,

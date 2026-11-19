@@ -34,6 +34,27 @@ test('parseNewUser возвращает ошибки для обоих неко�
   assert.ok(result.error.fields?.email);
 });
 
+test('валидация объясняет по-русски разные причины ошибки имени и email', () => {
+  const cases = [
+    { field: 'name', value: '   ', message: 'Укажите имя.' },
+    { field: 'name', value: 'я'.repeat(101), message: 'Имя должно содержать не более 100 символов.' },
+    { field: 'name', value: 'Alex\tJohnson', message: 'Имя не должно содержать управляющие символы.' },
+    { field: 'email', value: '', message: 'Укажите email.' },
+    { field: 'email', value: 'dnv.kjn', message: 'Добавьте символ @. Например, name@example.com.' },
+    { field: 'email', value: 'alex@', message: 'Введите email в формате name@example.com.' },
+    { field: 'email', value: 'a@b@c.com', message: 'Введите email в формате name@example.com.' },
+    { field: 'email', value: 'alex@-example.com', message: 'Введите email в формате name@example.com.' },
+    { field: 'email', value: 'a'.repeat(255), message: 'Email должен содержать не более 254 символов.' },
+  ] as const;
+
+  for (const { field, value, message } of cases) {
+    const json = Buffer.from(JSON.stringify({ ...input, [field]: value }));
+    const result = parseNewUser(json);
+    assert.ok('error' in result);
+    assert.equal(result.error.fields?.[field], message);
+  }
+});
+
 test('хранилище выдаёт последовательные id после максимального начального id', () => {
   const start = { id: 7, ...input };
   const store = createUsersStore([start]);
