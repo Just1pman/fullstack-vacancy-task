@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { join, resolve } from 'node:path';
+import { filterUsersByName, parseNameFilter } from './users-search.ts';
 import { createUsersStore, type User } from './users.ts';
 
 const assets = new Map<string, [filename: string, contentType: string]>([
@@ -40,12 +41,25 @@ async function serveStatic(
   }
 }
 
-function sendUsers(response: ServerResponse, users: readonly User[]) {
-  response.writeHead(200, {
+function sendJson(response: ServerResponse, status: number, data: unknown) {
+  const body = JSON.stringify(data);
+  response.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
   });
-  response.end(JSON.stringify(users));
+  response.end(body);
+}
+
+function sendUsersList(response: ServerResponse, query: string, users: readonly User[]) {
+  const params = new URLSearchParams(query);
+  const filter = parseNameFilter(params.getAll('name'));
+  if ('error' in filter) {
+    sendJson(response, 400, { code: 'INVALID_QUERY', message: filter.error });
+    return;
+  }
+
+  const matchingUsers = filterUsersByName(users, filter.name);
+  sendJson(response, 200, matchingUsers);
 }
 
 export function createApp(publicDir: string, initialUsers: readonly User[]) {
@@ -53,9 +67,21 @@ export function createApp(publicDir: string, initialUsers: readonly User[]) {
   const usersStore = createUsersStore(initialUsers);
 
   return createServer((request, response) => {
-    const pathname = (request.url ?? '').split('?', 1)[0];
+    const url = request.url ?? '';
+    const [pathname] = url.split('?', 1);
+
     if (request.method === 'GET' && pathname === '/api/users') {
-      sendUsers(response, usersStore.listUsers());
+      const query = url.slice(pathname.length);
+      try {
+        sendUsersList(response, query, usersStore.listUsers());
+      } catch (error) {
+        console.error(error);
+        if (response.headersSent) {
+          response.destroy();
+        } else {
+          sendJson(response, 500, { code: 'INTERNAL_ERROR', message: 'Внутренняя ошибка сервера.' });
+        }
+      }
       return;
     }
 

@@ -55,9 +55,23 @@ test('GET возвращает список пользователей с id, и
 
 test('GET ищет по подстроке имени без учёта регистра', async (t) => {
   const url = await startUsersApi(t);
-  const users = await getUsers(`${url}?name=lEx`);
+  const users = await getUsers(`${url}?name=%20lEx%20`);
 
   assert.deepEqual(users.map(({ name }) => name), ['Alex Johnson']);
+  assert.deepEqual(await getUsers(`${url}?name=Alex%3F`), []);
+});
+
+test('GET возвращает INVALID_QUERY для повторного или слишком длинного параметра name', async (t) => {
+  const url = await startUsersApi(t);
+  const queries = ['name=Alex&name=Maria', `name=${'a'.repeat(101)}`];
+
+  for (const query of queries) {
+    const response = await fetch(`${url}?${query}`);
+    assert.equal(response.status, 400);
+    const error = await response.json();
+    assert.equal(error.code, 'INVALID_QUERY');
+    assert.match(error.message, /\S/);
+  }
 });
 
 test('POST возвращает созданных пользователей с уникальными id', async (t) => {
