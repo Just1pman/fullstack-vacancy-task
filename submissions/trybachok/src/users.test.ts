@@ -3,16 +3,13 @@ import { once } from 'node:events';
 import { test, type TestContext } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.ts';
-
-type User = {
-  id: number;
-  name: string;
-  email: string;
-};
+import { loadUsersFile } from './users-file.ts';
+import type { User } from './users.ts';
 
 async function startUsersApi(t: TestContext) {
   const publicDir = fileURLToPath(new URL('../public/', import.meta.url));
-  const server = createApp(publicDir);
+  const usersFile = fileURLToPath(new URL('../data/users.json', import.meta.url));
+  const server = createApp(publicDir, await loadUsersFile(usersFile));
   await once(server.listen(0, '127.0.0.1'), 'listening');
   t.after(() => new Promise<void>((resolve, reject) => {
     server.close((error) => {
@@ -46,6 +43,7 @@ test('GET возвращает список пользователей с id, и
 
   assert.equal(response.status, 200);
   assert.match(response.headers.get('content-type') ?? '', /^application\/json\b/);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
   const users: User[] = await response.json();
   assert.ok(Array.isArray(users) && users.length > 0);
   for (const user of users) {

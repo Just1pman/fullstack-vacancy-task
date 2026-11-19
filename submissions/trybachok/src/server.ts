@@ -1,11 +1,13 @@
 import { createApp } from './app.ts';
+import { loadUsersFile } from './users-file.ts';
 
 const host = process.env.HOST?.trim();
 const portValue = process.env.PORT?.trim() ?? '';
 const publicDir = process.env.PUBLIC_DIR?.trim();
+const usersFile = process.env.USERS_FILE?.trim();
 
-if (!host || !publicDir) {
-  console.error('Укажите HOST и PUBLIC_DIR в настройках окружения.');
+if (!host || !publicDir || !usersFile) {
+  console.error('Укажите HOST, PUBLIC_DIR и USERS_FILE в настройках окружения.');
   process.exit(1);
 }
 
@@ -15,6 +17,12 @@ if (!/^\d{1,5}$/.test(portValue) || port < 1 || port > 65535) {
   process.exit(1);
 }
 
-createApp(publicDir).listen(port, host, () => {
-  console.log(`Сервер запущен. HOST=${host}, PORT=${port}`);
+const initialUsers = await loadUsersFile(usersFile).catch((error: unknown) => {
+  console.error('Не удалось загрузить начальных пользователей.', error instanceof Error ? error.message : error);
+  process.exit(1);
+});
+
+createApp(publicDir, initialUsers).listen(port, host, () => {
+  const urlHost = host.includes(':') ? `[${host}]` : host;
+  console.log(`Откройте в браузере: http://${urlHost}:${port}`);
 });

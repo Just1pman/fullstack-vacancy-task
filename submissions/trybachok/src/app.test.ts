@@ -12,7 +12,7 @@ test('сервер отдаёт страницу из указанного ка�
   const html = '<h1>Тестовая страница пользователей</h1>';
   await writeFile(join(publicDir, 'index.html'), html);
 
-  const server = createApp(publicDir);
+  const server = createApp(publicDir, []);
   await once(server.listen(0, '127.0.0.1'), 'listening');
   t.after(() => new Promise<void>((resolve, reject) => {
     server.close((error) => {
