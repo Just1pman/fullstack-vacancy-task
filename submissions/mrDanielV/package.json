@@ -1,0 +1,12 @@
+{
+  "name": "mrDanielV-fullstack-task",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p server && tsc -p client",
+    "start": "node server/dist/index.js",
+    "dev": "npm run build && npm start"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
