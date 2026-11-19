@@ -133,14 +133,8 @@ input[aria-invalid="true"] {
 }
 
 .status:empty,
-.error:empty,
-.field .error {
+.error:empty {
   margin: 0;
-}
-
-.field .error:empty {
-  height: 0;
-  margin-top: -0.375rem;
 }
 
 .users {

@@ -21,8 +21,6 @@ const form = findElement<HTMLFormElement>('user-form');
 const fields = findElement<HTMLFieldSetElement>('user-fields');
 const nameInput = findElement<HTMLInputElement>('name');
 const emailInput = findElement<HTMLInputElement>('email');
-const nameError = findElement('name-error');
-const emailError = findElement('email-error');
 const formError = findElement('form-error');
 const createButton = findElement<HTMLButtonElement>('create');
 const deletingIds = new Set<number>();
@@ -96,24 +94,16 @@ function renderListState(state: ListState) {
 const load = createListLoader(api.list, renderListState);
 const loadUsers = () => load(searchInput.value.trim());
 
-function setFieldError(input: HTMLInputElement, element: HTMLElement, message = '') {
-  element.textContent = message;
+function setFieldValidity(input: HTMLInputElement, message = '') {
+  input.setCustomValidity(message);
   if (message) input.setAttribute('aria-invalid', 'true');
   else input.removeAttribute('aria-invalid');
 }
 
-function setValidationHint(input: HTMLInputElement, error: HTMLElement, message?: string) {
+function setValidationHint(input: HTMLInputElement, message?: string) {
   input.setCustomValidity('');
   const hint = message ?? (input.validity.valid ? '' : 'Проверьте значение поля.');
-  input.setCustomValidity(hint);
-  setFieldError(input, error, hint);
-}
-
-function clearFieldErrorOnInput(input: HTMLInputElement, error: HTMLElement) {
-  input.addEventListener('input', () => {
-    input.setCustomValidity('');
-    setFieldError(input, error);
-  });
+  setFieldValidity(input, hint);
 }
 
 async function createUser() {
@@ -121,15 +111,15 @@ async function createUser() {
   const input = { name: nameInput.value, email: emailInput.value };
   formError.textContent = '';
   const errors = validateUserFields(input.name, input.email);
-  setValidationHint(nameInput, nameError, errors.name);
-  setValidationHint(emailInput, emailError, errors.email);
+  setValidationHint(nameInput, errors.name);
+  setValidationHint(emailInput, errors.email);
   if (!form.reportValidity()) return;
 
   actionStatus.textContent = 'Добавляем пользователя…';
   fields.disabled = true;
   createButton.textContent = 'Добавляем…';
 
-  let focusTarget: HTMLElement = nameInput;
+  let hasServerFieldErrors = false;
   try {
     await api.create(input);
     form.reset();
@@ -137,18 +127,23 @@ async function createUser() {
     void loadUsers();
   } catch (error) {
     actionStatus.textContent = '';
-    const message = error instanceof UsersApiError ? error.message : 'Попробуйте ещё раз.';
-    formError.textContent = `Не удалось добавить пользователя. ${message}`;
-    if (error instanceof UsersApiError) {
-      setFieldError(nameInput, nameError, error.fields.name);
-      setFieldError(emailInput, emailError, error.fields.email);
-      if (!error.fields.name && error.fields.email) focusTarget = emailInput;
+    if (error instanceof UsersApiError && (error.fields.name || error.fields.email)) {
+      hasServerFieldErrors = true;
+      setFieldValidity(nameInput, error.fields.name);
+      setFieldValidity(emailInput, error.fields.email);
+    } else {
+      const message = error instanceof UsersApiError ? error.message : 'Попробуйте ещё раз.';
+      formError.textContent = `Не удалось добавить пользователя. ${message}`;
     }
   } finally {
     fields.disabled = false;
     createButton.textContent = 'Добавить';
-    const active = document.activeElement;
-    if (active === document.body || form.contains(active)) focusTarget.focus();
+    if (hasServerFieldErrors) {
+      form.reportValidity();
+    } else {
+      const active = document.activeElement;
+      if (active === document.body || form.contains(active)) nameInput.focus();
+    }
   }
 }
 
@@ -199,8 +194,8 @@ form.addEventListener('submit', (event) => {
   event.preventDefault();
   void createUser();
 });
-clearFieldErrorOnInput(nameInput, nameError);
-clearFieldErrorOnInput(emailInput, emailError);
+nameInput.addEventListener('input', () => setFieldValidity(nameInput));
+emailInput.addEventListener('input', () => setFieldValidity(emailInput));
 searchInput.addEventListener('input', () => void loadUsers());
 retryButton.addEventListener('click', () => void loadUsers());
 void loadUsers();
