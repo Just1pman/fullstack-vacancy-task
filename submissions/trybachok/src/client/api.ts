@@ -78,7 +78,13 @@ export function createUsersApi(send: typeof fetch = fetch) {
 
     async remove(id: number): Promise<boolean> {
       const response = await request(`${usersPath}/${id}`, { method: 'DELETE' }, 404);
-      return response.status !== 404;
+      if (response.ok) return true;
+
+      const payload: unknown = await response.json().catch(() => null);
+      if (payload && typeof payload === 'object' && 'code' in payload && payload.code === 'USER_NOT_FOUND') {
+        return false;
+      }
+      throw parseError(payload);
     },
   };
 }

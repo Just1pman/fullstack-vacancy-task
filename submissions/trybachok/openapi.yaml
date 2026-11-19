@@ -159,7 +159,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiError'
               example:
-                code: NOT_FOUND
+                code: USER_NOT_FOUND
                 message: Пользователь не найден.
         '500':
           $ref: '#/components/responses/InternalError'
@@ -218,6 +218,7 @@ components:
             - VALIDATION_ERROR
             - INVALID_ID
             - NOT_FOUND
+            - USER_NOT_FOUND
             - METHOD_NOT_ALLOWED
             - PAYLOAD_TOO_LARGE
             - UNSUPPORTED_MEDIA_TYPE

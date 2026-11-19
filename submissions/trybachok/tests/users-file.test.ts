@@ -51,17 +51,17 @@ test('loadUsersFile сообщает об отсутствующем файле'
   await assert.rejects(loadUsersFile(await tempFile(t)), { code: 'ENOENT' });
 });
 
-for (const { mode, permission } of [
-  { mode: 0o200, permission: 'чтение' },
-  { mode: 0o400, permission: 'запись' },
-]) {
-  test(`loadUsersFile отклоняет файл без разрешения на ${permission}`, {
-    skip: process.platform === 'win32' || process.getuid?.() === 0,
-  }, async (t) => {
-    const path = await tempFile(t);
-    await writeFile(path, json);
-    await chmod(path, mode);
+const skipPermissionTests = process.platform === 'win32' || process.getuid?.() === 0;
 
-    await assert.rejects(loadUsersFile(path), { code: 'EACCES' });
-  });
-}
+test('loadUsersFile читает файл с правами 0444', { skip: skipPermissionTests }, async (t) => {
+  const path = await tempFile(t);
+  await writeFile(path, json, { mode: 0o444 });
+  assert.deepEqual(await loadUsersFile(path), users);
+});
+
+test('loadUsersFile отклоняет файл без права чтения', { skip: skipPermissionTests }, async (t) => {
+  const path = await tempFile(t);
+  await writeFile(path, json);
+  await chmod(path, 0o200);
+  await assert.rejects(loadUsersFile(path), { code: 'EACCES' });
+});

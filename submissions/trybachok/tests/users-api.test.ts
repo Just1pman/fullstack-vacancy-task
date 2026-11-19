@@ -155,7 +155,7 @@ test('DELETE удаляет пользователя из списка', async (
   const repeated = await fetch(`${url}/1`, { method: 'DELETE' });
   assert.equal(repeated.status, 404);
   const error = await repeated.json();
-  assert.equal(error.code, 'NOT_FOUND');
+  assert.equal(error.code, 'USER_NOT_FOUND');
   assert.match(error.message, /\S/);
 });
 

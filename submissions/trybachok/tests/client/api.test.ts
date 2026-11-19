@@ -76,9 +76,19 @@ test('клиент удаляет пользователя через DELETE и 
 });
 
 test('клиент распознаёт отсутствующего пользователя при удалении', async () => {
-  const missing = createUsersApi(async () => Response.json({ code: 'NOT_FOUND' }, { status: 404 }));
+  const missing = createUsersApi(async () => Response.json({ code: 'USER_NOT_FOUND' }, { status: 404 }));
   const unavailable = createUsersApi(async () => new Response(null, { status: 500 }));
 
   assert.equal(await missing.remove(alex.id), false);
   await assert.rejects(unavailable.remove(alex.id), /Сервер не смог выполнить запрос/);
+});
+
+test('клиент сообщает об ошибке удаления при 404 от маршрута или прокси', async () => {
+  const route = createUsersApi(async () => Response.json(
+    { code: 'NOT_FOUND', message: 'Маршрут API не найден.' }, { status: 404 },
+  ));
+  const proxy = createUsersApi(async () => new Response('<html>Not found</html>', { status: 404 }));
+
+  await assert.rejects(route.remove(alex.id), /Маршрут API не найден/);
+  await assert.rejects(proxy.remove(alex.id), /Сервер не смог выполнить запрос/);
 });

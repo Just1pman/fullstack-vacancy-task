@@ -1,4 +1,4 @@
-import { open } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { validateUserFields } from '../shared/user-fields.ts';
 import type { User } from '../shared/users.ts';
 
@@ -45,10 +45,5 @@ function parseUser(value: unknown, position: number): User {
 }
 
 export async function loadUsersFile(path: string): Promise<User[]> {
-  const file = await open(path, 'r+');
-  try {
-    return parseUsers(await file.readFile('utf8'));
-  } finally {
-    await file.close();
-  }
+  return parseUsers(await readFile(path, 'utf8'));
 }

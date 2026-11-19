@@ -88,7 +88,7 @@ function sendDeletedUser(response: ServerResponse, rawId: string, store: UsersSt
   }
 
   if (!store.removeUser(id)) {
-    sendJson(response, 404, { code: 'NOT_FOUND', message: 'Пользователь не найден.' });
+    sendJson(response, 404, { code: 'USER_NOT_FOUND', message: 'Пользователь не найден.' });
     return;
   }
 
