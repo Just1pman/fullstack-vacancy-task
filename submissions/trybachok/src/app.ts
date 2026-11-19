@@ -2,14 +2,19 @@ import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type OutgoingHttpHeaders, type ServerResponse } from 'node:http';
 import { join, resolve } from 'node:path';
 import { parseNewUser } from './users-create.ts';
+import { parseUserId } from './users-delete.ts';
 import { filterUsersByName, parseNameFilter } from './users-search.ts';
 import { createUsersStore, type User } from './users.ts';
+
+type UsersStore = ReturnType<typeof createUsersStore>;
 
 const assets = new Map<string, [filename: string, contentType: string]>([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
 ]);
 const usersBodyLimit = 10 * 1024;
+const usersPath = '/api/users';
+const userPathPrefix = `${usersPath}/`;
 
 async function serveStatic(
   request: IncomingMessage,
@@ -68,7 +73,7 @@ async function readUsersBody(request: IncomingMessage): Promise<Buffer | null> {
 async function sendCreatedUser(
   request: IncomingMessage,
   response: ServerResponse,
-  store: ReturnType<typeof createUsersStore>,
+  store: UsersStore,
 ) {
   const contentType = request.headers['content-type'] ?? '';
   const [mediaType] = contentType.split(';', 1);
@@ -96,7 +101,7 @@ async function sendCreatedUser(
   }
 
   const user = store.addUser(result.user);
-  sendJson(response, 201, user, { Location: `/api/users/${user.id}` });
+  sendJson(response, 201, user, { Location: `${userPathPrefix}${user.id}` });
 }
 
 function sendUsersList(response: ServerResponse, query: string, users: readonly User[]) {
@@ -111,6 +116,58 @@ function sendUsersList(response: ServerResponse, query: string, users: readonly 
   sendJson(response, 200, matchingUsers);
 }
 
+function sendDeletedUser(response: ServerResponse, rawId: string, store: UsersStore) {
+  const id = parseUserId(rawId);
+  if (id === null) {
+    sendJson(response, 400, { code: 'INVALID_ID', message: 'Укажите корректный идентификатор пользователя.' });
+    return;
+  }
+
+  if (!store.removeUser(id)) {
+    sendJson(response, 404, { code: 'NOT_FOUND', message: 'Пользователь не найден.' });
+    return;
+  }
+
+  response.writeHead(204).end();
+}
+
+function sendMethodNotAllowed(response: ServerResponse, allow: string) {
+  sendJson(response, 405, {
+    code: 'METHOD_NOT_ALLOWED',
+    message: 'Метод запроса не поддерживается.',
+  }, { Allow: allow });
+}
+
+async function handleUsersApi(
+  request: IncomingMessage,
+  response: ServerResponse,
+  pathname: string,
+  query: string,
+  store: UsersStore,
+) {
+  if (pathname === usersPath) {
+    if (request.method === 'GET') {
+      return sendUsersList(response, query, store.listUsers());
+    }
+    if (request.method === 'POST') {
+      return sendCreatedUser(request, response, store);
+    }
+    return sendMethodNotAllowed(response, 'GET, POST');
+  }
+
+  if (pathname.startsWith(userPathPrefix)) {
+    const rawId = pathname.slice(userPathPrefix.length);
+    if (rawId && !rawId.includes('/')) {
+      if (request.method === 'DELETE') {
+        return sendDeletedUser(response, rawId, store);
+      }
+      return sendMethodNotAllowed(response, 'DELETE');
+    }
+  }
+
+  sendJson(response, 404, { code: 'NOT_FOUND', message: 'Маршрут API не найден.' });
+}
+
 export function createApp(publicDir: string, initialUsers: readonly User[]) {
   const assetDir = resolve(publicDir);
   const usersStore = createUsersStore(initialUsers);
@@ -119,19 +176,10 @@ export function createApp(publicDir: string, initialUsers: readonly User[]) {
     const url = request.url ?? '';
     const [pathname] = url.split('?', 1);
 
-    if (pathname === '/api/users') {
+    if (pathname === '/api' || pathname.startsWith('/api/')) {
       try {
-        if (request.method === 'GET') {
-          const query = url.slice(pathname.length);
-          sendUsersList(response, query, usersStore.listUsers());
-        } else if (request.method === 'POST') {
-          await sendCreatedUser(request, response, usersStore);
-        } else {
-          sendJson(response, 405, {
-            code: 'METHOD_NOT_ALLOWED',
-            message: 'Метод запроса не поддерживается.',
-          }, { Allow: 'GET, POST' });
-        }
+        const query = url.slice(pathname.length);
+        await handleUsersApi(request, response, pathname, query, usersStore);
       } catch (error) {
         if (response.destroyed) return;
         console.error(error);

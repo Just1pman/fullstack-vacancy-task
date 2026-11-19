@@ -28,5 +28,13 @@ export function createUsersStore(initialUsers: readonly User[]) {
       users.push(user);
       return user;
     },
+
+    removeUser(id: number): boolean {
+      const index = users.findIndex((user) => user.id === id);
+      if (index === -1) return false;
+
+      users.splice(index, 1);
+      return true;
+    },
   };
 }

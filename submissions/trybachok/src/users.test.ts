@@ -150,4 +150,35 @@ test('DELETE удаляет пользователя из списка', async (
   assert.equal(await response.text(), '');
   const users = await getUsers(url);
   assert.ok(users.every(({ id }) => id !== 1));
+
+  const repeated = await fetch(`${url}/1`, { method: 'DELETE' });
+  assert.equal(repeated.status, 404);
+  const error = await repeated.json();
+  assert.equal(error.code, 'NOT_FOUND');
+  assert.match(error.message, /\S/);
+});
+
+test('DELETE отклоняет некорректный id', async (t) => {
+  const url = await startUsersApi(t);
+  const response = await fetch(`${url}/01`, { method: 'DELETE' });
+
+  assert.equal(response.status, 400);
+  const error = await response.json();
+  assert.equal(error.code, 'INVALID_ID');
+  assert.match(error.message, /\S/);
+  const users = await getUsers(url);
+  assert.ok(users.some(({ id }) => id === 1));
+});
+
+test('API различает неизвестный маршрут и неподдерживаемый метод', async (t) => {
+  const url = await startUsersApi(t);
+
+  const unknown = await fetch(`${url}/1/other`);
+  assert.equal(unknown.status, 404);
+  assert.equal((await unknown.json()).code, 'NOT_FOUND');
+
+  const wrongMethod = await fetch(`${url}/1`);
+  assert.equal(wrongMethod.status, 405);
+  assert.equal(wrongMethod.headers.get('allow'), 'DELETE');
+  assert.equal((await wrongMethod.json()).code, 'METHOD_NOT_ALLOWED');
 });
