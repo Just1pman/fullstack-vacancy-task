@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createListLoader, type ListState } from './list.ts';
-import type { User } from '../users.ts';
+import { createListLoader, type ListState } from '../../src/client/list.ts';
+import type { User } from '../../src/users.ts';
 
 test('загрузчик отменяет прежний запрос и игнорирует его запоздавший ответ', async () => {
   let resolveFirst!: (users: User[]) => void;

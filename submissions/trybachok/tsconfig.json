@@ -4,10 +4,10 @@
     "module": "NodeNext",
     "rewriteRelativeImportExtensions": true,
     "types": ["node"],
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "dist",
     "strict": true,
     "noEmitOnError": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.test.ts"]
 }

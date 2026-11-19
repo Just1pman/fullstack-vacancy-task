@@ -3,7 +3,7 @@ import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, type TestContext } from 'node:test';
-import { loadUsersFile, parseUsers } from './users-file.ts';
+import { loadUsersFile, parseUsers } from '../src/users-file.ts';
 
 const users = [{ id: 1, name: 'Alex', email: 'alex@example.com' }];
 const json = JSON.stringify(users);

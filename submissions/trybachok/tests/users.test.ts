@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { test, type TestContext } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { createApp } from './app.ts';
-import { loadUsersFile } from './users-file.ts';
-import type { User } from './users.ts';
+import { createApp } from '../src/app.ts';
+import type { User } from '../src/users.ts';
+
+const initialUsers: readonly User[] = [
+  { id: 1, name: 'Alex Johnson', email: 'alex.johnson@example.com' },
+  { id: 2, name: 'Maria Petrova', email: 'maria.petrova@example.com' },
+];
 
 async function startUsersApi(t: TestContext) {
-  const publicDir = fileURLToPath(new URL('../public/', import.meta.url));
-  const usersFile = fileURLToPath(new URL('../data/users.json', import.meta.url));
-  const server = createApp(publicDir, await loadUsersFile(usersFile));
+  const server = createApp('public', initialUsers);
   await once(server.listen(0, '127.0.0.1'), 'listening');
   t.after(() => new Promise<void>((resolve, reject) => {
     server.close((error) => {

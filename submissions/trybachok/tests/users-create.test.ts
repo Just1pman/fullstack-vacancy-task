@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseNewUser } from './users-create.ts';
-import { createUsersStore } from './users.ts';
+import { parseNewUser } from '../src/users-create.ts';
+import { createUsersStore } from '../src/users.ts';
 
 const input = { name: 'Alex', email: 'alex@example.com' };
 

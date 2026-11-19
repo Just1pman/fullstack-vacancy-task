@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createUsersStore } from './users.ts';
+import { createUsersStore } from '../src/users.ts';
 
 test('listUsers возвращает всех пользователей хранилища', () => {
   const users = [

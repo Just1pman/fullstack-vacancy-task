@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createUsersApi } from './api.ts';
+import { createUsersApi } from '../../src/client/api.ts';
 
 const alex = { id: 1, name: 'Alex Johnson', email: 'alex@example.com' };
 

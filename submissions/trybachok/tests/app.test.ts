@@ -4,7 +4,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { createApp } from './app.ts';
+import { createApp } from '../src/app.ts';
 
 test('сервер отдаёт страницу из указанного каталога', async (t) => {
   const publicDir = await mkdtemp(join(tmpdir(), 'vacancy-public-'));

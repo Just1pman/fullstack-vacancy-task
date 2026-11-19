@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseUserId } from './users-delete.ts';
-import { createUsersStore } from './users.ts';
+import { parseUserId } from '../src/users-delete.ts';
+import { createUsersStore } from '../src/users.ts';
 
 test('parseUserId принимает положительные безопасные целые числа', () => {
   assert.equal(parseUserId('1'), 1);
