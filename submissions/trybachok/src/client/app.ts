@@ -2,7 +2,7 @@ import { createUsersApi, UsersApiError } from './api.ts';
 import { createListLoader, type ListState } from './list.ts';
 import type { User } from '../shared/users.ts';
 import { bindCreateUserForm } from './create-user-form.ts';
-import { findElement } from './dom.ts';
+import { createActionStatus, findElement } from './dom.ts';
 
 const api = createUsersApi();
 const list = findElement<HTMLUListElement>('users');
@@ -10,7 +10,7 @@ const listStatus = findElement('list-status');
 const listError = findElement('list-error');
 const retryButton = findElement<HTMLButtonElement>('retry');
 const searchInput = findElement<HTMLInputElement>('search');
-const actionStatus = findElement('action-status');
+const showActionStatus = createActionStatus(findElement('action-status'));
 const deleteError = findElement('delete-error');
 const deletingIds = new Set<number>();
 let displayedName = '';
@@ -106,15 +106,15 @@ async function deleteUser(user: User, button: HTMLButtonElement) {
   deletingIds.add(user.id);
   setDeletePending(button, true);
   deleteError.textContent = '';
-  actionStatus.textContent = 'Удаляем пользователя…';
+  showActionStatus('Удаляем пользователя…');
 
   try {
     const removed = await api.remove(user.id);
     deleteUserRow(user.id, returnFocus);
-    actionStatus.textContent = removed ? 'Пользователь удалён.' : 'Пользователь уже удалён.';
+    showActionStatus(removed ? 'Пользователь удалён.' : 'Пользователь уже удалён.', 'success');
     void loadUsers();
   } catch (error) {
-    actionStatus.textContent = '';
+    showActionStatus('');
     const message = error instanceof UsersApiError ? error.message : 'Попробуйте ещё раз.';
     deleteError.textContent = `Не удалось удалить пользователя. ${message}`;
   } finally {
@@ -128,9 +128,10 @@ async function deleteUser(user: User, button: HTMLButtonElement) {
   }
 }
 
-bindCreateUserForm(api.create, (message) => {
-  actionStatus.textContent = message;
-}, () => void loadUsers());
+bindCreateUserForm(api.create, showActionStatus, () => {
+  showActionStatus('Пользователь добавлен.', 'success');
+  void loadUsers();
+});
 searchInput.addEventListener('input', () => void loadUsers());
 retryButton.addEventListener('click', () => void loadUsers());
 void loadUsers();

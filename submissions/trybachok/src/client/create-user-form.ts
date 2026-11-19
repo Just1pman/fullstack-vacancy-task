@@ -44,7 +44,6 @@ export function bindCreateUserForm(
     try {
       await create(input);
       form.reset();
-      onStatus('Пользователь добавлен.');
       onCreated();
     } catch (error) {
       onStatus('');
