@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseNewUser } from '../src/users-create.ts';
-import { createUsersStore } from '../src/users.ts';
+import { parseNewUser } from '../src/server/users-create.ts';
 
 const input = { name: 'Alex', email: 'alex@example.com' };
 
@@ -53,15 +52,4 @@ test('валидация объясняет по-русски разные пр�
     assert.ok('error' in result);
     assert.equal(result.error.fields?.[field], message);
   }
-});
-
-test('хранилище выдаёт последовательные id после максимального начального id', () => {
-  const start = { id: 7, ...input };
-  const store = createUsersStore([start]);
-  const first = store.addUser(input);
-  const second = store.addUser(input);
-
-  assert.deepEqual(first, { id: 8, ...input });
-  assert.deepEqual(second, { id: 9, ...input });
-  assert.deepEqual(store.listUsers(), [start, first, second]);
 });

@@ -1,57 +1,16 @@
-import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type OutgoingHttpHeaders, type ServerResponse } from 'node:http';
-import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parseNewUser } from './users-create.ts';
 import { parseUserId } from './users-delete.ts';
 import { filterUsersByName, parseNameFilter } from './users-search.ts';
-import { createUsersStore, type User } from './users.ts';
+import { createUsersStore } from './users.ts';
+import { serveStatic } from './static.ts';
+import type { User } from '../shared/users.ts';
 
 type UsersStore = ReturnType<typeof createUsersStore>;
 
-const assets = new Map<string, [filename: string, contentType: string]>([
-  ['/', ['index.html', 'text/html; charset=utf-8']],
-  ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
-  ['/client/app.js', [fileURLToPath(new URL('./client/app.js', import.meta.url)), 'text/javascript; charset=utf-8']],
-  ['/client/api.js', [fileURLToPath(new URL('./client/api.js', import.meta.url)), 'text/javascript; charset=utf-8']],
-  ['/client/list.js', [fileURLToPath(new URL('./client/list.js', import.meta.url)), 'text/javascript; charset=utf-8']],
-  ['/user-fields.js', [fileURLToPath(new URL('./user-fields.js', import.meta.url)), 'text/javascript; charset=utf-8']],
-]);
 const usersBodyLimit = 10 * 1024;
 const usersPath = '/api/users';
 const userPathPrefix = `${usersPath}/`;
-
-async function serveStatic(
-  request: IncomingMessage,
-  response: ServerResponse,
-  pathname: string,
-  publicDir: string,
-) {
-  const asset = assets.get(pathname);
-
-  if (!asset) {
-    response.writeHead(404).end();
-    return;
-  }
-
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
-    response.writeHead(405, { Allow: 'GET, HEAD' }).end();
-    return;
-  }
-
-  const [filename, contentType] = asset;
-  try {
-    const content = await readFile(resolve(publicDir, filename));
-    response.writeHead(200, {
-      'Content-Type': contentType,
-      'Content-Length': content.length,
-    });
-    response.end(request.method === 'HEAD' ? undefined : content);
-  } catch (error) {
-    console.error(error);
-    response.writeHead(500).end();
-  }
-}
 
 function sendJson(response: ServerResponse, status: number, data: unknown, headers?: OutgoingHttpHeaders) {
   const body = JSON.stringify(data);
@@ -174,7 +133,6 @@ async function handleUsersApi(
 }
 
 export function createApp(publicDir: string, initialUsers: readonly User[]) {
-  const assetDir = resolve(publicDir);
   const usersStore = createUsersStore(initialUsers);
 
   return createServer(async (request, response) => {
@@ -197,6 +155,6 @@ export function createApp(publicDir: string, initialUsers: readonly User[]) {
       return;
     }
 
-    return serveStatic(request, response, pathname, assetDir);
+    return serveStatic(request, response, pathname, publicDir);
   });
 }

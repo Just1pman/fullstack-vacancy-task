@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { filterUsersByName, parseNameFilter } from '../src/users-search.ts';
+import { filterUsersByName, parseNameFilter } from '../src/server/users-search.ts';
 
 const alex = { id: 1, name: 'Alex Johnson', email: 'alex@example.com' };
 const maria = { id: 2, name: 'Maria Petrova', email: 'maria.alex@example.com' };

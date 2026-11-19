@@ -1,6 +1,6 @@
 import { open } from 'node:fs/promises';
-import { validateUserFields } from './user-fields.ts';
-import type { User } from './users.ts';
+import { validateUserFields } from '../shared/user-fields.ts';
+import type { User } from '../shared/users.ts';
 
 export function parseUsers(json: string): User[] {
   let value: unknown;
@@ -32,8 +32,8 @@ function parseUser(value: unknown, position: number): User {
   const { id, name, email } = record;
 
   if (typeof id !== 'number' || !Number.isSafeInteger(id) || id < 1
-    || typeof name !== 'string' || !name.trim()
-    || typeof email !== 'string' || !email.trim()) {
+    || typeof name !== 'string'
+    || typeof email !== 'string') {
     throw new Error(`Запись ${position} должна содержать положительный целый id, имя и email.`);
   }
 

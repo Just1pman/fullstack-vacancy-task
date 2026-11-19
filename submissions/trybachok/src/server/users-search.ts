@@ -1,4 +1,4 @@
-import type { User } from './users.ts';
+import type { User } from '../shared/users.ts';
 
 type NameFilter = { name: string } | { error: string };
 

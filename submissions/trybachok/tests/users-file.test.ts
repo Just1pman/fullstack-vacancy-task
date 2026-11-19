@@ -3,7 +3,7 @@ import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test, type TestContext } from 'node:test';
-import { loadUsersFile, parseUsers } from '../src/users-file.ts';
+import { loadUsersFile, parseUsers } from '../src/server/users-file.ts';
 
 const users = [{ id: 1, name: 'Alex', email: 'alex@example.com' }];
 const json = JSON.stringify(users);
@@ -36,6 +36,7 @@ test('parseUsers отклоняет начальные записи с поля�
   for (const record of invalidRecords) {
     assert.throws(() => parseUsers(JSON.stringify([record])), /Запись 1/);
   }
+  assert.throws(() => parseUsers(JSON.stringify([{ ...users[0], name: '   ' }])), /Запись 1: Укажите имя\./);
 });
 
 test('loadUsersFile читает файл и сохраняет его исходное содержимое', async (t) => {

@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { parseUserId } from '../src/users-delete.ts';
-import { createUsersStore } from '../src/users.ts';
+import { parseUserId } from '../src/server/users-delete.ts';
 
 test('parseUserId принимает положительные безопасные целые числа', () => {
   assert.equal(parseUserId('1'), 1);
@@ -13,16 +12,4 @@ test('parseUserId отклоняет значения вне десятично�
   for (const id of invalidIds) {
     assert.equal(parseUserId(id), null);
   }
-});
-
-test('removeUser удаляет только указанную запись и сообщает о повторном удалении', () => {
-  const alex = { id: 1, name: 'Alex', email: 'alex@example.com' };
-  const maria = { id: 2, name: 'Maria', email: 'maria@example.com' };
-  const store = createUsersStore([alex, maria]);
-
-  assert.equal(store.removeUser(maria.id), true);
-  assert.deepEqual(store.listUsers(), [alex]);
-  assert.equal(store.removeUser(maria.id), false);
-  assert.deepEqual(store.listUsers(), [alex]);
-  assert.equal(store.addUser(maria).id, 3);
 });

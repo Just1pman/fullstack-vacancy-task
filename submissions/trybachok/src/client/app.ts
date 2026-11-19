@@ -1,13 +1,8 @@
 import { createUsersApi, UsersApiError } from './api.ts';
 import { createListLoader, type ListState } from './list.ts';
-import type { User } from '../users.ts';
-import { validateUserFields } from '../user-fields.ts';
-
-function findElement<T extends HTMLElement>(id: string): T {
-  const element = document.getElementById(id);
-  if (!element) throw new Error(`Элемент #${id} отсутствует на странице.`);
-  return element as T;
-}
+import type { User } from '../shared/users.ts';
+import { bindCreateUserForm } from './create-user-form.ts';
+import { findElement } from './dom.ts';
 
 const api = createUsersApi();
 const list = findElement<HTMLUListElement>('users');
@@ -17,12 +12,6 @@ const retryButton = findElement<HTMLButtonElement>('retry');
 const searchInput = findElement<HTMLInputElement>('search');
 const actionStatus = findElement('action-status');
 const deleteError = findElement('delete-error');
-const form = findElement<HTMLFormElement>('user-form');
-const fields = findElement<HTMLFieldSetElement>('user-fields');
-const nameInput = findElement<HTMLInputElement>('name');
-const emailInput = findElement<HTMLInputElement>('email');
-const formError = findElement('form-error');
-const createButton = findElement<HTMLButtonElement>('create');
 const deletingIds = new Set<number>();
 let displayedName = '';
 
@@ -97,59 +86,6 @@ function renderListState(state: ListState) {
 const load = createListLoader(api.list, renderListState);
 const loadUsers = () => load(searchInput.value.trim());
 
-function setFieldValidity(input: HTMLInputElement, message = '') {
-  input.setCustomValidity(message);
-  if (message) input.setAttribute('aria-invalid', 'true');
-  else input.removeAttribute('aria-invalid');
-}
-
-function setValidationHint(input: HTMLInputElement, message?: string) {
-  input.setCustomValidity('');
-  const hint = message ?? (input.validity.valid ? '' : 'Проверьте значение поля.');
-  setFieldValidity(input, hint);
-}
-
-async function createUser() {
-  if (fields.disabled) return;
-  const input = { name: nameInput.value, email: emailInput.value };
-  formError.textContent = '';
-  const errors = validateUserFields(input.name, input.email);
-  setValidationHint(nameInput, errors.name);
-  setValidationHint(emailInput, errors.email);
-  if (!form.reportValidity()) return;
-
-  actionStatus.textContent = 'Добавляем пользователя…';
-  fields.disabled = true;
-  createButton.textContent = 'Добавляем…';
-
-  let hasServerFieldErrors = false;
-  try {
-    await api.create(input);
-    form.reset();
-    actionStatus.textContent = 'Пользователь добавлен.';
-    void loadUsers();
-  } catch (error) {
-    actionStatus.textContent = '';
-    if (error instanceof UsersApiError && (error.fields.name || error.fields.email)) {
-      hasServerFieldErrors = true;
-      setFieldValidity(nameInput, error.fields.name);
-      setFieldValidity(emailInput, error.fields.email);
-    } else {
-      const message = error instanceof UsersApiError ? error.message : 'Попробуйте ещё раз.';
-      formError.textContent = `Не удалось добавить пользователя. ${message}`;
-    }
-  } finally {
-    fields.disabled = false;
-    createButton.textContent = 'Добавить';
-    if (hasServerFieldErrors) {
-      form.reportValidity();
-    } else {
-      const active = document.activeElement;
-      if (active === document.body || form.contains(active)) nameInput.focus();
-    }
-  }
-}
-
 function deleteUserRow(id: number, returnFocus: boolean) {
   const row = list.querySelector<HTMLLIElement>(`li[data-user-id="${id}"]`);
   if (!row) return;
@@ -192,14 +128,9 @@ async function deleteUser(user: User, button: HTMLButtonElement) {
   }
 }
 
-form.noValidate = true;
-form.addEventListener('submit', (event) => {
-  event.preventDefault();
-  void createUser();
-});
-nameInput.addEventListener('input', () => setFieldValidity(nameInput));
-emailInput.addEventListener('input', () => setFieldValidity(emailInput));
+bindCreateUserForm(api.create, (message) => {
+  actionStatus.textContent = message;
+}, () => void loadUsers());
 searchInput.addEventListener('input', () => void loadUsers());
 retryButton.addEventListener('click', () => void loadUsers());
-fields.disabled = false;
 void loadUsers();

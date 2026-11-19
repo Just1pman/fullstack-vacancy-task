@@ -1,10 +1,4 @@
-export type User = Readonly<{
-  id: number;
-  name: string;
-  email: string;
-}>;
-
-export type NewUser = Pick<User, 'name' | 'email'>;
+import type { NewUser, User } from '../shared/users.ts';
 
 export function createUsersStore(initialUsers: readonly User[]) {
   const users = [...initialUsers];

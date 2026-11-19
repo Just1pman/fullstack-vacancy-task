@@ -1,4 +1,4 @@
-import type { User } from '../users.ts';
+import type { User } from '../shared/users.ts';
 
 export type ListState =
   | { kind: 'loading' }

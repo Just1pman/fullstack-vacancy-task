@@ -1,5 +1,5 @@
-import type { NewUser } from './users.ts';
-import { validateUserFields, type UserFieldErrors } from './user-fields.ts';
+import type { NewUser } from '../shared/users.ts';
+import { validateUserFields, type UserFieldErrors } from '../shared/user-fields.ts';
 
 type NewUserError = {
   code: 'INVALID_JSON' | 'VALIDATION_ERROR';

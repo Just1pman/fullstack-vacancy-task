@@ -1,4 +1,4 @@
-import type { NewUser, User } from '../users.ts';
+import type { NewUser, User } from '../shared/users.ts';
 
 const usersPath = '/api/users';
 const serverError = 'Сервер не смог выполнить запрос. Попробуйте ещё раз.';

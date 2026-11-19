@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { test, type TestContext } from 'node:test';
-import { createApp } from '../src/app.ts';
-import type { User } from '../src/users.ts';
+import { createApp } from '../src/server/app.ts';
+import type { User } from '../src/shared/users.ts';
 
 const initialUsers: readonly User[] = [
   { id: 1, name: 'Alex Johnson', email: 'alex.johnson@example.com' },
