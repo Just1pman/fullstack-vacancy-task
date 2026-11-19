@@ -1,4 +1,5 @@
 import { open } from 'node:fs/promises';
+import { validateUserFields } from './user-fields.ts';
 import type { User } from './users.ts';
 
 export function parseUsers(json: string): User[] {
@@ -35,6 +36,10 @@ function parseUser(value: unknown, position: number): User {
     || typeof email !== 'string' || !email.trim()) {
     throw new Error(`Запись ${position} должна содержать положительный целый id, имя и email.`);
   }
+
+  const errors = validateUserFields(name, email);
+  const message = errors.name ?? errors.email;
+  if (message) throw new Error(`Запись ${position}: ${message}`);
 
   return { id, name, email };
 }

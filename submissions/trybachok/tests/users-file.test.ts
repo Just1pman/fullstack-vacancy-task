@@ -26,6 +26,18 @@ test('parseUsers отклоняет сломанный JSON, неверную с
   assert.throws(() => parseUsers(JSON.stringify([...users, ...users])), /повторяется/);
 });
 
+test('parseUsers отклоняет начальные записи с полями вне контракта API', () => {
+  const invalidRecords = [
+    { ...users[0], email: 'broken' },
+    { ...users[0], name: 'я'.repeat(101) },
+    { ...users[0], name: 'Alex\tJohnson' },
+  ];
+
+  for (const record of invalidRecords) {
+    assert.throws(() => parseUsers(JSON.stringify([record])), /Запись 1/);
+  }
+});
+
 test('loadUsersFile читает файл и сохраняет его исходное содержимое', async (t) => {
   const path = await tempFile(t);
   await writeFile(path, json);

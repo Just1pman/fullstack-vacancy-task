@@ -40,7 +40,7 @@ function isUser(value: unknown): value is User {
 }
 
 export function createUsersApi(send: typeof fetch = fetch) {
-  async function request(url: string, options?: RequestInit): Promise<Response> {
+  async function request(url: string, options?: RequestInit, acceptedStatus?: number): Promise<Response> {
     let response: Response;
     try {
       response = await send(url, options);
@@ -48,7 +48,7 @@ export function createUsersApi(send: typeof fetch = fetch) {
       throw new UsersApiError('Не удалось связаться с сервером. Проверьте подключение и попробуйте ещё раз.');
     }
 
-    if (!response.ok) {
+    if (!response.ok && response.status !== acceptedStatus) {
       if (response.status >= 500) throw new UsersApiError(serverError);
 
       const payload: unknown = await response.json().catch(() => null);
@@ -76,8 +76,9 @@ export function createUsersApi(send: typeof fetch = fetch) {
       });
     },
 
-    async remove(id: number): Promise<void> {
-      await request(`${usersPath}/${id}`, { method: 'DELETE' });
+    async remove(id: number): Promise<boolean> {
+      const response = await request(`${usersPath}/${id}`, { method: 'DELETE' }, 404);
+      return response.status !== 404;
     },
   };
 }

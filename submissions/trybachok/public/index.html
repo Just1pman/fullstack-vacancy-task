@@ -14,11 +14,11 @@
       <div class="layout">
         <section class="panel" aria-labelledby="create-heading">
           <h2 id="create-heading">Добавить пользователя</h2>
-          <form id="user-form" aria-labelledby="create-heading">
-            <fieldset id="user-fields">
+          <form id="user-form" method="post" aria-labelledby="create-heading">
+            <fieldset id="user-fields" disabled>
               <div class="field">
                 <label for="name">Имя</label>
-                <input id="name" name="name" autocomplete="name" required maxlength="100">
+                <input id="name" name="name" autocomplete="name" required>
               </div>
               <div class="field">
                 <label for="email">Email</label>
@@ -33,7 +33,7 @@
           <h2 id="users-heading">Список пользователей</h2>
           <div class="field">
             <label for="search">Поиск по имени</label>
-            <input id="search" type="search" maxlength="100">
+            <input id="search" type="search">
           </div>
           <p id="list-status" class="status" role="status"></p>
           <p id="list-error" class="error" role="alert"></p>

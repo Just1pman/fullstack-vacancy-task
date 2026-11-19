@@ -72,5 +72,13 @@ test('клиент удаляет пользователя через DELETE и 
     return new Response(null, { status: 204 });
   });
 
-  await api.remove(alex.id);
+  assert.equal(await api.remove(alex.id), true);
+});
+
+test('клиент распознаёт отсутствующего пользователя при удалении', async () => {
+  const missing = createUsersApi(async () => Response.json({ code: 'NOT_FOUND' }, { status: 404 }));
+  const unavailable = createUsersApi(async () => new Response(null, { status: 500 }));
+
+  assert.equal(await missing.remove(alex.id), false);
+  await assert.rejects(unavailable.remove(alex.id), /Сервер не смог выполнить запрос/);
 });

@@ -24,6 +24,7 @@ const emailInput = findElement<HTMLInputElement>('email');
 const formError = findElement('form-error');
 const createButton = findElement<HTMLButtonElement>('create');
 const deletingIds = new Set<number>();
+let displayedName = '';
 
 function setDeletePending(button: HTMLButtonElement, pending: boolean) {
   button.disabled = pending;
@@ -70,6 +71,7 @@ function renderListState(state: ListState) {
   listError.textContent = '';
 
   if (state.kind === 'loading') {
+    if (displayedName !== searchInput.value.trim()) renderUsers([]);
     list.setAttribute('aria-busy', 'true');
     listStatus.textContent = 'Загружаем пользователей…';
     return;
@@ -82,6 +84,7 @@ function renderListState(state: ListState) {
     return;
   }
 
+  displayedName = state.name;
   renderUsers(state.users);
   if (state.users.length) {
     listStatus.textContent = state.name ? `Результатов поиска: ${state.users.length}` : '';
@@ -170,9 +173,9 @@ async function deleteUser(user: User, button: HTMLButtonElement) {
   actionStatus.textContent = 'Удаляем пользователя…';
 
   try {
-    await api.remove(user.id);
+    const removed = await api.remove(user.id);
     deleteUserRow(user.id, returnFocus);
-    actionStatus.textContent = 'Пользователь удалён.';
+    actionStatus.textContent = removed ? 'Пользователь удалён.' : 'Пользователь уже удалён.';
     void loadUsers();
   } catch (error) {
     actionStatus.textContent = '';
@@ -198,4 +201,5 @@ nameInput.addEventListener('input', () => setFieldValidity(nameInput));
 emailInput.addEventListener('input', () => setFieldValidity(emailInput));
 searchInput.addEventListener('input', () => void loadUsers());
 retryButton.addEventListener('click', () => void loadUsers());
+fields.disabled = false;
 void loadUsers();
