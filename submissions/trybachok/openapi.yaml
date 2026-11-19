@@ -1,0 +1,250 @@
+openapi: 3.1.1
+info:
+  title: API пользователей
+  version: 1.0.0
+  description: |
+    Пользователи хранятся в памяти процесса. Перезапуск восстанавливает начальные данные.
+    Для неизвестного маршрута API сервер возвращает 404 с кодом NOT_FOUND.
+    Для неподдерживаемого метода на известном маршруте сервер возвращает 405
+    с кодом METHOD_NOT_ALLOWED и заголовком Allow со списком доступных методов.
+    Ошибки API возвращаются в JSON.
+servers:
+  - url: /
+
+paths:
+  /api/users:
+    get:
+      operationId: listUsers
+      summary: Получить список пользователей
+      parameters:
+        - name: name
+          in: query
+          description: |
+            Подстрока имени. Поиск выполняется без учёта регистра после удаления
+            крайних пробелов. Пустое значение или отсутствие параметра возвращает
+            весь список. Параметр можно передать один раз.
+          schema:
+            type: string
+            maxLength: 100
+          example: alex
+      responses:
+        '200':
+          description: Список пользователей. При отсутствии совпадений возвращается пустой массив.
+          headers:
+            Cache-Control:
+              required: true
+              description: При повторном запросе клиент получает актуальный список.
+              schema:
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '400':
+          description: Параметр name передан несколько раз или длиннее 100 символов.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                code: INVALID_QUERY
+                message: Передайте параметр name один раз.
+        '500':
+          $ref: '#/components/responses/InternalError'
+    post:
+      operationId: createUser
+      summary: Создать пользователя
+      description: |
+        Сервер валидирует тело запроса, обрезает крайние пробелы имени
+        и назначает идентификатор, уникальный в пределах процесса.
+        Повторяющиеся email допустимы.
+      requestBody:
+        required: true
+        description: JSON в UTF-8. Максимальный размер тела — 10 КиБ (10 240 байт).
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewUser'
+            example:
+              name: Alex Johnson
+              email: alex@example.com
+      responses:
+        '201':
+          description: Пользователь создан.
+          headers:
+            Location:
+              required: true
+              description: Относительный URI созданного пользователя.
+              schema:
+                type: string
+                format: uri-reference
+              example: /api/users/11
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: 11
+                name: Alex Johnson
+                email: alex@example.com
+        '400':
+          description: Тело отсутствует, содержит некорректный JSON или не соответствует схеме NewUser.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                malformedJson:
+                  value:
+                    code: INVALID_JSON
+                    message: Передайте корректный JSON.
+                invalidFields:
+                  value:
+                    code: VALIDATION_ERROR
+                    message: Проверьте данные пользователя.
+                    fields:
+                      name: Укажите имя.
+                      email: Укажите корректный email.
+        '413':
+          description: Размер тела превышает 10 240 байт.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                code: PAYLOAD_TOO_LARGE
+                message: Размер тела запроса превышает 10 КиБ.
+        '415':
+          description: Требуется Content-Type application/json.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                code: UNSUPPORTED_MEDIA_TYPE
+                message: Отправьте тело запроса в формате application/json.
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/users/{id}:
+    delete:
+      operationId: deleteUser
+      summary: Удалить пользователя
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Положительное целое число в десятичной записи без знака и ведущих нулей.
+          schema:
+            $ref: '#/components/schemas/UserId'
+          example: 11
+      responses:
+        '204':
+          description: Пользователь удалён. Тело ответа отсутствует.
+        '400':
+          description: Некорректный идентификатор.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                code: INVALID_ID
+                message: Укажите корректный идентификатор пользователя.
+        '404':
+          description: Пользователь с указанным идентификатором отсутствует.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              example:
+                code: USER_NOT_FOUND
+                message: Пользователь не найден.
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+    UserId:
+      type: integer
+      minimum: 1
+      maximum: 9007199254740991
+    UserName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      pattern: '\S'
+      not:
+        pattern: '[\u0000-\u001F\u007F-\u009F]'
+      description: От 1 до 100 символов, включая хотя бы один непробельный. Управляющие символы запрещены.
+    UserEmail:
+      type: string
+      format: email
+      maxLength: 254
+      pattern: >-
+        ^(?=[^@]{1,64}@)[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$
+      description: Email в ASCII без пробелов, с доменом из двух или более частей.
+    NewUser:
+      type: object
+      additionalProperties: false
+      required: [name, email]
+      properties:
+        name:
+          $ref: '#/components/schemas/UserName'
+        email:
+          $ref: '#/components/schemas/UserEmail'
+    User:
+      type: object
+      additionalProperties: false
+      required: [id, name, email]
+      properties:
+        id:
+          $ref: '#/components/schemas/UserId'
+        name:
+          $ref: '#/components/schemas/UserName'
+        email:
+          $ref: '#/components/schemas/UserEmail'
+    ApiError:
+      type: object
+      required: [code, message]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+            - INVALID_QUERY
+            - INVALID_JSON
+            - VALIDATION_ERROR
+            - INVALID_ID
+            - NOT_FOUND
+            - USER_NOT_FOUND
+            - METHOD_NOT_ALLOWED
+            - PAYLOAD_TOO_LARGE
+            - UNSUPPORTED_MEDIA_TYPE
+            - INTERNAL_ERROR
+        message:
+          type: string
+          minLength: 1
+        fields:
+          type: object
+          description: Сообщения по полям, если ошибка валидации относится к имени или email.
+          additionalProperties: false
+          minProperties: 1
+          properties:
+            name:
+              type: string
+              minLength: 1
+            email:
+              type: string
+              minLength: 1
+  responses:
+    InternalError:
+      description: Внутренняя ошибка. Подробности исключения остаются на сервере.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            code: INTERNAL_ERROR
+            message: Внутренняя ошибка сервера.

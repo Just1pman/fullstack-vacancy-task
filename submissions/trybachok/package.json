@@ -1,0 +1,14 @@
+{
+  "name": "trybachok-users",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc && tsc -p tsconfig.browser.json",
+    "start": "npm run build && node --env-file=.env dist/src/server/server.js",
+    "test": "npm run build && node --test \"dist/tests/**/*.test.js\""
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "typescript": "5.9.3"
+  }
+}
