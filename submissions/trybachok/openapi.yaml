@@ -9,7 +9,7 @@ info:
     с кодом METHOD_NOT_ALLOWED и заголовком Allow со списком доступных методов.
     Ошибки API возвращаются в JSON.
 servers:
-  - url: http://127.0.0.1:3000
+  - url: /
 
 paths:
   /api/users:
