@@ -77,7 +77,7 @@ test('GET возвращает INVALID_QUERY для повторного или 
 test('POST возвращает созданных пользователей с уникальными id', async (t) => {
   const url = await startUsersApi(t);
   const newUsers = [
-    { name: 'Test One', email: 'one@example.com' },
+    { name: '  Test One  ', email: 'one@example.com' },
     { name: 'Test Two', email: 'two@example.com' },
   ];
   const createdUsers: User[] = [];
@@ -87,7 +87,8 @@ test('POST возвращает созданных пользователей с
     assert.equal(response.status, 201);
     const created: User = await response.json();
     assert.ok(Number.isSafeInteger(created.id) && created.id > 0);
-    assert.equal(created.name, input.name);
+    assert.equal(response.headers.get('location'), `/api/users/${created.id}`);
+    assert.equal(created.name, input.name.trim());
     assert.equal(created.email, input.email);
     createdUsers.push(created);
   }
@@ -122,6 +123,24 @@ for (const { field, reason, body } of invalidInputs) {
     assert.match(error.fields?.[field], /\S/);
   });
 }
+
+test('POST различает неверный JSON, тип содержимого и превышение лимита тела', async (t) => {
+  const url = await startUsersApi(t);
+  const validBody = JSON.stringify({ name: validName, email: validEmail });
+  const cases = [
+    { body: '{', type: 'application/json', status: 400, code: 'INVALID_JSON' },
+    { body: validBody, type: 'text/plain', status: 415, code: 'UNSUPPORTED_MEDIA_TYPE' },
+    { body: validBody.padEnd(10_241), type: 'application/json', status: 413, code: 'PAYLOAD_TOO_LARGE' },
+  ];
+
+  for (const { body, type, status, code } of cases) {
+    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': type }, body });
+    assert.equal(response.status, status);
+    const error = await response.json();
+    assert.equal(error.code, code);
+    assert.match(error.message, /\S/);
+  }
+});
 
 test('DELETE удаляет пользователя из списка', async (t) => {
   const url = await startUsersApi(t);

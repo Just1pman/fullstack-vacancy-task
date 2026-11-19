@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { createServer, type IncomingMessage, type OutgoingHttpHeaders, type ServerResponse } from 'node:http';
 import { join, resolve } from 'node:path';
+import { parseNewUser } from './users-create.ts';
 import { filterUsersByName, parseNameFilter } from './users-search.ts';
 import { createUsersStore, type User } from './users.ts';
 
@@ -8,6 +9,7 @@ const assets = new Map<string, [filename: string, contentType: string]>([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
 ]);
+const usersBodyLimit = 10 * 1024;
 
 async function serveStatic(
   request: IncomingMessage,
@@ -41,13 +43,60 @@ async function serveStatic(
   }
 }
 
-function sendJson(response: ServerResponse, status: number, data: unknown) {
+function sendJson(response: ServerResponse, status: number, data: unknown, headers?: OutgoingHttpHeaders) {
   const body = JSON.stringify(data);
   response.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
+    ...headers,
   });
   response.end(body);
+}
+
+async function readUsersBody(request: IncomingMessage): Promise<Buffer | null> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of request.iterator({ destroyOnReturn: false })) {
+    const bytes: Buffer = chunk;
+    size += bytes.length;
+    if (size > usersBodyLimit) return null;
+    chunks.push(bytes);
+  }
+  return Buffer.concat(chunks, size);
+}
+
+async function sendCreatedUser(
+  request: IncomingMessage,
+  response: ServerResponse,
+  store: ReturnType<typeof createUsersStore>,
+) {
+  const contentType = request.headers['content-type'] ?? '';
+  const [mediaType] = contentType.split(';', 1);
+  if (mediaType.trim().toLowerCase() !== 'application/json') {
+    sendJson(response, 415, {
+      code: 'UNSUPPORTED_MEDIA_TYPE',
+      message: 'Отправьте тело запроса в формате application/json.',
+    });
+    return;
+  }
+
+  const body = await readUsersBody(request);
+  if (body === null) {
+    sendJson(response, 413, {
+      code: 'PAYLOAD_TOO_LARGE',
+      message: 'Размер тела запроса превышает 10 КиБ.',
+    }, { Connection: 'close' });
+    return;
+  }
+
+  const result = parseNewUser(body);
+  if ('error' in result) {
+    sendJson(response, 400, result.error);
+    return;
+  }
+
+  const user = store.addUser(result.user);
+  sendJson(response, 201, user, { Location: `/api/users/${user.id}` });
 }
 
 function sendUsersList(response: ServerResponse, query: string, users: readonly User[]) {
@@ -66,15 +115,25 @@ export function createApp(publicDir: string, initialUsers: readonly User[]) {
   const assetDir = resolve(publicDir);
   const usersStore = createUsersStore(initialUsers);
 
-  return createServer((request, response) => {
+  return createServer(async (request, response) => {
     const url = request.url ?? '';
     const [pathname] = url.split('?', 1);
 
-    if (request.method === 'GET' && pathname === '/api/users') {
-      const query = url.slice(pathname.length);
+    if (pathname === '/api/users') {
       try {
-        sendUsersList(response, query, usersStore.listUsers());
+        if (request.method === 'GET') {
+          const query = url.slice(pathname.length);
+          sendUsersList(response, query, usersStore.listUsers());
+        } else if (request.method === 'POST') {
+          await sendCreatedUser(request, response, usersStore);
+        } else {
+          sendJson(response, 405, {
+            code: 'METHOD_NOT_ALLOWED',
+            message: 'Метод запроса не поддерживается.',
+          }, { Allow: 'GET, POST' });
+        }
       } catch (error) {
+        if (response.destroyed) return;
         console.error(error);
         if (response.headersSent) {
           response.destroy();
