@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "npm run build && node dist/server.js"
+    "start": "npm run build && node dist/server.js",
+    "test": "npm run build && node --test \"dist/**/*.test.js\""
   },
   "devDependencies": {
     "@types/node": "22.20.5",
