@@ -1,13 +1,4 @@
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-}
-
-export interface NewUser {
-  name: string;
-  email: string;
-}
+import type { NewUser, User } from "../shared/user.js";
 
 const seed: NewUser[] = [
   { name: "Alex Johnson", email: "alex.johnson@example.com" },

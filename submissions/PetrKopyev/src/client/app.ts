@@ -6,6 +6,8 @@ import {
   getUsers,
   type User,
 } from "./api.js";
+import { createLoader, type LoaderState } from "./loader.js";
+import { createToaster } from "./toast.js";
 
 function getElement<T extends HTMLElement>(id: string): T {
   const element = document.getElementById(id);
@@ -23,8 +25,8 @@ const formError = getElement<HTMLParagraphElement>("form-error");
 const addButton = getElement<HTMLButtonElement>("add-button");
 const searchInput = getElement<HTMLInputElement>("search");
 const clearButton = getElement<HTMLButtonElement>("search-clear");
+const searchStatus = getElement<HTMLParagraphElement>("search-status");
 const listError = getElement<HTMLParagraphElement>("list-error");
-const count = getElement<HTMLSpanElement>("count");
 const statusBox = getElement<HTMLDivElement>("status");
 const statusMessage = getElement<HTMLParagraphElement>("status-message");
 const retryButton = getElement<HTMLButtonElement>("retry-button");
@@ -35,40 +37,11 @@ const trashIcon = getElement<HTMLTemplateElement>("trash-icon");
 const closeIcon = getElement<HTMLTemplateElement>("close-icon");
 const toasts = getElement<HTMLDivElement>("toasts");
 
-let usersController: AbortController | null = null;
+const showToast = createToaster(toasts, closeIcon, () => searchInput.focus());
 let searchTimer = 0;
 const deletingIds = new Set<number>();
 let pendingUser: User | null = null;
 let pressedOnBackdrop = false;
-
-function showToast(message: string, kind: "success" | "danger" = "success") {
-  const toast = document.createElement("div");
-  const text = document.createElement("span");
-  const closeButton = document.createElement("button");
-  let timer = 0;
-  let dismissed = false;
-
-  toast.className = "toast";
-  if (kind === "danger") toast.classList.add("toast-danger");
-  text.textContent = message;
-  closeButton.type = "button";
-  closeButton.className = "toast-close";
-  closeButton.setAttribute("aria-label", "Закрыть уведомление");
-  closeButton.append(closeIcon.content.cloneNode(true));
-  toast.replaceChildren(text, closeButton);
-  toasts.append(toast);
-
-  function dismiss() {
-    if (dismissed) return;
-    dismissed = true;
-    window.clearTimeout(timer);
-    toast.classList.add("toast-leaving");
-    window.setTimeout(() => toast.remove(), 200);
-  }
-
-  closeButton.addEventListener("click", dismiss);
-  timer = window.setTimeout(dismiss, 5000);
-}
 
 function showStatus(kind: "loading" | "empty" | "error" | "none", message = "") {
   statusBox.hidden = kind === "none";
@@ -87,50 +60,33 @@ function errorMessage(error: unknown): string {
 
 function clearListError() {
   listError.textContent = "";
-  listError.hidden = true;
 }
 
 function showListError(text: string) {
   listError.textContent = text;
-  listError.hidden = false;
 }
 
-function setDeleteDisabled(id: number, disabled: boolean) {
+function setDeleteDisabled(id: number, disabled: boolean, name: string) {
   const button = userList.querySelector<HTMLButtonElement>(`button[data-id="${id}"]`);
-  if (button) button.disabled = disabled;
+  if (!button) return;
+  button.disabled = disabled;
+  button.title = disabled ? "Удаляем…" : "Удалить";
+  button.setAttribute("aria-label", disabled ? `Удаляем ${name}…` : `Удалить ${name}`);
 }
-
-const initials = (name: string) => {
-  const words = name.trim().split(/\s+/);
-  return (
-    words.length > 1
-      ? [...words[0]][0] + [...words[1]][0]
-      : [...words[0]].slice(0, 2).join("")
-  ).toUpperCase();
-};
-
-const hueOf = (name: string) => {
-  let hash = 0;
-  for (const char of name) hash = Math.imul(hash ^ (char.codePointAt(0) ?? 0), 2377);
-  return ((hash ^ (hash >>> 15)) >>> 0) % 360;
-};
 
 function renderUsers(users: User[]) {
-  count.textContent = String(users.length);
-  count.hidden = false;
+  const active = document.activeElement;
+  const focusedId =
+    active instanceof HTMLButtonElement && userList.contains(active) ? active.dataset.id : undefined;
 
   const items = users.map((user) => {
     const item = document.createElement("li");
-    const avatar = document.createElement("span");
     const details = document.createElement("div");
     const name = document.createElement("strong");
     const email = document.createElement("span");
     const button = document.createElement("button");
+    const isDeleting = deletingIds.has(user.id);
 
-    avatar.className = "avatar";
-    avatar.textContent = initials(user.name);
-    avatar.setAttribute("aria-hidden", "true");
-    avatar.style.setProperty("--hue", String(hueOf(user.name)));
     details.className = "user-details";
     name.className = "user-name";
     name.textContent = user.name;
@@ -138,45 +94,53 @@ function renderUsers(users: User[]) {
     email.textContent = user.email;
     button.type = "button";
     button.className = "icon-button";
-    button.title = "Удалить";
+    button.title = isDeleting ? "Удаляем…" : "Удалить";
     button.append(trashIcon.content.cloneNode(true));
     button.dataset.id = String(user.id);
-    button.disabled = deletingIds.has(user.id);
-    button.setAttribute("aria-label", `Удалить ${user.name}`);
+    button.disabled = isDeleting;
+    button.setAttribute("aria-label", isDeleting ? `Удаляем ${user.name}…` : `Удалить ${user.name}`);
     button.addEventListener("click", () => {
       confirmDelete(user);
     });
 
     details.replaceChildren(name, email);
-    item.replaceChildren(avatar, details, button);
+    item.replaceChildren(details, button);
     return item;
   });
 
   userList.replaceChildren(...items);
+  if (focusedId) {
+    userList.querySelector<HTMLButtonElement>(`button[data-id="${focusedId}"]`)?.focus();
+  }
   showStatus(users.length === 0 ? "empty" : "none");
 }
 
-async function loadUsers() {
-  clearListError();
-  if (usersController) usersController.abort();
-  const controller = new AbortController();
-  usersController = controller;
-  userList.setAttribute("aria-busy", "true");
-  if (userList.childElementCount === 0) showStatus("loading");
-
-  try {
-    const users = await getUsers(searchInput.value.trim(), controller.signal);
-    if (controller !== usersController) return;
-    renderUsers(users);
-  } catch (error) {
-    if (controller !== usersController) return;
-    if (error instanceof DOMException && error.name === "AbortError") return;
-    userList.replaceChildren();
-    count.hidden = true;
-    showStatus("error", errorMessage(error));
-  } finally {
-    if (controller === usersController) userList.removeAttribute("aria-busy");
+function renderLoaderState(state: LoaderState) {
+  if (state.kind === "loading") {
+    userList.setAttribute("aria-busy", "true");
+    searchStatus.textContent = "";
+    clearListError();
+    if (userList.childElementCount === 0) showStatus("loading");
+    return;
   }
+
+  userList.removeAttribute("aria-busy");
+  if (state.kind === "ready") {
+    renderUsers(state.users);
+    searchStatus.textContent =
+      state.name && state.users.length > 0 ? `Найдено пользователей: ${state.users.length}` : "";
+    return;
+  }
+
+  userList.replaceChildren();
+  searchStatus.textContent = "";
+  showStatus("error", errorMessage(state.error));
+}
+
+const loader = createLoader(getUsers, renderLoaderState);
+
+function loadUsers(): Promise<void> {
+  return loader.load(searchInput.value.trim());
 }
 
 function clearFormErrors() {
@@ -185,12 +149,12 @@ function clearFormErrors() {
   nameInput.removeAttribute("aria-invalid");
   emailInput.removeAttribute("aria-invalid");
   formError.textContent = "";
-  formError.hidden = true;
 }
 
 async function handleSubmit() {
   clearFormErrors();
   formFields.disabled = true;
+  addButton.textContent = "Добавляем…";
   const queryAtSubmit = searchInput.value;
   let focusTarget: HTMLElement = nameInput;
 
@@ -214,46 +178,87 @@ async function handleSubmit() {
       if (!error.fields.name && error.fields.email) focusTarget = emailInput;
     } else {
       formError.textContent = errorMessage(error);
-      formError.hidden = false;
       focusTarget = addButton;
     }
   } finally {
     formFields.disabled = false;
+    addButton.textContent = "Добавить";
   }
 
   const active = document.activeElement;
   if (active === document.body || form.contains(active)) focusTarget.focus();
 }
 
+function neighborIds(
+  item: HTMLLIElement | null | undefined,
+  direction: "nextElementSibling" | "previousElementSibling",
+): number[] {
+  const ids: number[] = [];
+  let sibling = item?.[direction];
+  while (sibling) {
+    const id = sibling.querySelector<HTMLButtonElement>("button[data-id]")?.dataset.id;
+    if (id !== undefined) ids.push(Number(id));
+    sibling = sibling[direction];
+  }
+  return ids;
+}
+
+function restoreDeleteFocus(
+  id: number,
+  deleteButton: HTMLButtonElement | null,
+  removed: boolean,
+  nextIds: number[],
+  prevIds: number[],
+) {
+  const active = document.activeElement;
+  if (active !== document.body && active !== deleteButton) return;
+  if (!removed) {
+    userList.querySelector<HTMLButtonElement>(`button[data-id="${id}"]`)?.focus();
+    return;
+  }
+
+  for (const candidateId of [...nextIds, ...prevIds]) {
+    const target = userList.querySelector<HTMLButtonElement>(`button[data-id="${candidateId}"]`);
+    if (target) {
+      target.focus();
+      return;
+    }
+  }
+  searchInput.focus();
+}
+
 async function handleDelete(user: User) {
   const id = user.id;
   if (deletingIds.has(id)) return;
+  const deleteButton = userList.querySelector<HTMLButtonElement>(`button[data-id="${id}"]`);
+  const item = deleteButton?.closest("li");
+  const nextIds = neighborIds(item, "nextElementSibling");
+  const prevIds = neighborIds(item, "previousElementSibling");
+  let removed = false;
+
   deletingIds.add(id);
-  setDeleteDisabled(id, true);
+  setDeleteDisabled(id, true, user.name);
   clearListError();
 
   try {
     await deleteUser(id);
+    removed = true;
     showToast(`Пользователь ${user.name} удалён`, "danger");
-    const activeElement = document.activeElement;
-    if (
-      activeElement === document.body ||
-      activeElement?.matches(`button[data-id="${id}"]`)
-    ) {
-      searchInput.focus();
-    }
-    void loadUsers();
+    await loadUsers();
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
-      void loadUsers();
+      removed = true;
+      await loadUsers();
       showListError("Пользователь уже удалён");
     } else {
       showListError(errorMessage(error));
-      setDeleteDisabled(id, false);
     }
   } finally {
     deletingIds.delete(id);
+    setDeleteDisabled(id, false, user.name);
   }
+
+  restoreDeleteFocus(id, deleteButton, removed, nextIds, prevIds);
 }
 
 function confirmDelete(user: User) {
@@ -267,8 +272,8 @@ function confirmDelete(user: User) {
 
 dialog.addEventListener("close", () => {
   if (dialog.returnValue === "confirm" && pendingUser !== null) void handleDelete(pendingUser);
+  else if (document.activeElement === document.body) searchInput.focus();
   pendingUser = null;
-  if (document.activeElement === document.body) searchInput.focus();
 });
 
 dialog.addEventListener("mousedown", (event) => {
@@ -285,6 +290,7 @@ form.addEventListener("submit", (event) => {
 });
 
 searchInput.addEventListener("input", () => {
+  searchStatus.textContent = "";
   window.clearTimeout(searchTimer);
   searchTimer = window.setTimeout(() => {
     void loadUsers();
@@ -298,8 +304,13 @@ clearButton.addEventListener("click", () => {
   void loadUsers();
 });
 
-retryButton.addEventListener("click", () => {
-  void loadUsers();
+retryButton.addEventListener("click", async () => {
+  window.clearTimeout(searchTimer);
+  const shouldRestoreFocus = document.activeElement === retryButton;
+  await loadUsers();
+  const active = document.activeElement;
+  if (!shouldRestoreFocus || (active !== document.body && active !== retryButton)) return;
+  (statusBox.dataset.kind === "error" ? retryButton : searchInput).focus();
 });
 
 void loadUsers();

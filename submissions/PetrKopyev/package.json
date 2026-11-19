@@ -8,10 +8,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.server.json && tsc -p tsconfig.client.json",
     "start": "npm run build && node dist/server/index.js",
-    "test": "npm run build && node --test \"dist/server/*.test.js\""
+    "test": "npm run build && tsc -p tsconfig.client-test.json && node --test \"dist/server/*.test.js\" \"dist/client-test/*.test.js\""
   },
   "devDependencies": {
-    "@types/node": "^22.20.5",
-    "typescript": "^7.0.2"
+    "@types/node": "22.20.5",
+    "typescript": "7.0.2"
   }
 }

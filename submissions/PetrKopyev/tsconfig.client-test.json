@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.client.json",
+  "compilerOptions": {
+    "outDir": "dist/client-test",
+    "types": ["node"]
+  },
+  "include": ["src/client/*.test.ts", "src/client/api.ts", "src/client/loader.ts", "src/shared"],
+  "exclude": []
+}

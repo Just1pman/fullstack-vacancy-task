@@ -3,12 +3,18 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 const BODY_LIMIT = 10 * 1024;
 
 export class HttpError extends Error {
+  readonly fields?: Record<string, string>;
+  readonly headers?: Record<string, string>;
+
   constructor(
     readonly status: number,
     readonly code: string,
     message: string,
+    options: { fields?: Record<string, string>; headers?: Record<string, string> } = {},
   ) {
     super(message);
+    this.fields = options.fields;
+    this.headers = options.headers;
   }
 }
 
@@ -20,13 +26,11 @@ export const sendJson = (res: ServerResponse, status: number, data: unknown) => 
   res.end(body);
 };
 
-export const sendError = (
-  res: ServerResponse,
-  status: number,
-  code: string,
-  message: string,
-  fields?: Record<string, string>,
-) => {
+export const sendError = (res: ServerResponse, error: HttpError) => {
+  const { status, code, message, fields, headers } = error;
+  if (headers) {
+    for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
+  }
   if (status === 413) res.setHeader("Connection", "close");
   sendJson(res, status, { error: { code, message, ...(fields ? { fields } : {}) } });
 };
@@ -38,57 +42,25 @@ export const readJsonBody = async (req: IncomingMessage): Promise<unknown> => {
   }
 
   const contentLength = Number(req.headers["content-length"]);
+  if (contentLength > BODY_LIMIT) {
+    req.resume();
+    throw new HttpError(413, "PAYLOAD_TOO_LARGE", "Слишком большое тело запроса (максимум 10 КБ)");
+  }
 
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    let size = 0;
-
-    const cleanup = () => {
-      req.off("data", onData);
-      req.off("end", onEnd);
-      req.off("error", onError);
-      req.off("close", onClose);
-    };
-    const rejectTooLarge = () => {
-      cleanup();
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of req.iterator({ destroyOnReturn: false })) {
+    size += chunk.length;
+    if (size > BODY_LIMIT) {
       req.resume();
-      reject(new HttpError(413, "PAYLOAD_TOO_LARGE", "Слишком большое тело запроса (максимум 10 КБ)"));
-    };
-    const onData = (chunk: Buffer) => {
-      size += chunk.length;
-      if (size > BODY_LIMIT) {
-        rejectTooLarge();
-        return;
-      }
-      chunks.push(chunk);
-    };
-    const onEnd = () => {
-      cleanup();
-      try {
-        resolve(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks))));
-      } catch {
-        reject(new HttpError(400, "INVALID_JSON", "Некорректный JSON"));
-      }
-    };
-    const onError = (error: Error) => {
-      cleanup();
-      reject(error);
-    };
-    const onClose = () => {
-      if (!req.complete) {
-        cleanup();
-        reject(new Error("Соединение закрыто до конца тела"));
-      }
-    };
-
-    if (contentLength > BODY_LIMIT) {
-      rejectTooLarge();
-      return;
+      throw new HttpError(413, "PAYLOAD_TOO_LARGE", "Слишком большое тело запроса (максимум 10 КБ)");
     }
+    chunks.push(chunk);
+  }
 
-    req.on("data", onData);
-    req.on("end", onEnd);
-    req.on("error", onError);
-    req.on("close", onClose);
-  });
+  try {
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks)));
+  } catch {
+    throw new HttpError(400, "INVALID_JSON", "Некорректный JSON");
+  }
 };

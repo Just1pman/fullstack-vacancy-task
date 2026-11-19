@@ -6,6 +6,8 @@ const indexHtml = path.resolve(import.meta.dirname, "../../public/index.html");
 const styleCss = path.resolve(import.meta.dirname, "../../public/style.css");
 const appJs = path.resolve(import.meta.dirname, "../client/app.js");
 const apiJs = path.resolve(import.meta.dirname, "../client/api.js");
+const toastJs = path.resolve(import.meta.dirname, "../client/toast.js");
+const loaderJs = path.resolve(import.meta.dirname, "../client/loader.js");
 
 const files: Record<string, { filePath: string; contentType: string }> = {
   "/": { filePath: indexHtml, contentType: "text/html; charset=utf-8" },
@@ -13,6 +15,8 @@ const files: Record<string, { filePath: string; contentType: string }> = {
   "/style.css": { filePath: styleCss, contentType: "text/css; charset=utf-8" },
   "/app.js": { filePath: appJs, contentType: "text/javascript; charset=utf-8" },
   "/api.js": { filePath: apiJs, contentType: "text/javascript; charset=utf-8" },
+  "/toast.js": { filePath: toastJs, contentType: "text/javascript; charset=utf-8" },
+  "/loader.js": { filePath: loaderJs, contentType: "text/javascript; charset=utf-8" },
 };
 
 const notFound = (res: ServerResponse) => {

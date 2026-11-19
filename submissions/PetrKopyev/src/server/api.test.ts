@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
-import { request } from "node:http";
 import net from "node:net";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { createApp } from "./app.js";
-import type { User } from "./store.js";
+import type { User } from "../shared/user.js";
 
 interface ErrorBody {
   error: {
@@ -194,30 +193,23 @@ describe("API", () => {
   });
 
   it("returns 413 for a chunked payload over 10 KB", { timeout: 5000 }, async () => {
-    const status = await new Promise<number>((resolve) => {
-      const req = request(
-        `${baseUrl}/api/users`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Transfer-Encoding": "chunked",
-          },
-        },
-        (res) => {
-          res.resume();
-          req.destroy();
-          resolve(res.statusCode ?? 0);
-        },
-      );
-      req.on("error", () => {});
-
-      for (let size = 0; size <= 10 * 1024; size += 1024) {
-        req.write("a".repeat(1024));
-      }
+    const body = new ReadableStream<Uint8Array>({
+      start: (controller) => {
+        for (let size = 0; size <= 10 * 1024; size += 1024) {
+          controller.enqueue(new TextEncoder().encode("a".repeat(1024)));
+        }
+        controller.close();
+      },
     });
+    const response = await fetch(`${baseUrl}/api/users`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      duplex: "half",
+    } as RequestInit & { duplex: "half" });
 
-    assert.equal(status, 413);
+    assert.equal(response.status, 413);
+    assert.equal((await readError(response)).error.code, "PAYLOAD_TOO_LARGE");
   });
 
   it("rejects malformed JSON", async () => {
@@ -328,6 +320,8 @@ describe("API", () => {
       "/style.css": "text/css",
       "/app.js": "text/javascript",
       "/api.js": "text/javascript",
+      "/toast.js": "text/javascript",
+      "/loader.js": "text/javascript",
     };
     for (const [path, contentType] of Object.entries(files)) {
       const response = await fetch(`${baseUrl}${path}`);

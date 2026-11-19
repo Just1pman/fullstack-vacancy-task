@@ -1,8 +1,5 @@
-import type { NewUser } from "./store.js";
-
-export type ValidationResult =
-  | { ok: true; value: NewUser }
-  | { ok: false; message: string; fields?: Record<string, string> };
+import type { NewUser } from "../shared/user.js";
+import { HttpError } from "./http.js";
 
 const isValidEmail = (email: string) => {
   const at = email.lastIndexOf("@");
@@ -24,9 +21,9 @@ const isValidEmail = (email: string) => {
   );
 };
 
-export const validateNewUser = (body: unknown): ValidationResult => {
+export const validateNewUser = (body: unknown): NewUser => {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
-    return { ok: false, message: "Тело запроса должно быть JSON-объектом" };
+    throw new HttpError(400, "VALIDATION_ERROR", "Тело запроса должно быть JSON-объектом");
   }
 
   const input = body as Record<string, unknown>;
@@ -60,9 +57,9 @@ export const validateNewUser = (body: unknown): ValidationResult => {
   }
 
   if (Object.keys(fields).length > 0) {
-    return { ok: false, message: "Проверьте введённые данные", fields };
+    throw new HttpError(400, "VALIDATION_ERROR", "Проверьте введённые данные", { fields });
   }
-  return { ok: true, value: { name, email } };
+  return { name, email };
 };
 
 export const parseId = (raw: string): number | null => {

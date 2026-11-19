@@ -1,13 +1,6 @@
-export interface User {
-  id: number;
-  name: string;
-  email: string;
-}
+import type { NewUser, User } from "../shared/user.js";
 
-export interface NewUser {
-  name: string;
-  email: string;
-}
+export type { User, NewUser };
 
 export type FieldErrors = Partial<Record<"name" | "email", string>>;
 

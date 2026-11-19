@@ -21,15 +21,15 @@
           <fieldset id="form-fields">
             <div class="field">
               <label for="name">Имя</label>
-              <input id="name" name="name" type="text" autocomplete="name" aria-describedby="name-error" aria-required="true">
-              <p id="name-error" class="field-error" aria-live="polite"></p>
+              <input id="name" name="name" type="text" autocomplete="name" maxlength="100" aria-describedby="name-error" aria-required="true">
+              <p id="name-error" class="field-error"></p>
             </div>
             <div class="field">
               <label for="email">Email</label>
-              <input id="email" name="email" type="email" autocomplete="email" aria-describedby="email-error" aria-required="true">
-              <p id="email-error" class="field-error" aria-live="polite"></p>
+              <input id="email" name="email" type="email" autocomplete="email" maxlength="254" aria-describedby="email-error" aria-required="true">
+              <p id="email-error" class="field-error"></p>
             </div>
-            <p id="form-error" class="error" role="alert" hidden></p>
+            <p id="form-error" class="error" role="alert"></p>
             <button id="add-button" class="btn btn-primary" type="submit">Добавить</button>
           </fieldset>
         </form>
@@ -38,7 +38,6 @@
       <section class="card card-list" aria-labelledby="list-heading">
         <div class="card-head">
           <h2 id="list-heading" class="card-title">Список пользователей</h2>
-          <span id="count" class="count" hidden>0</span>
         </div>
 
         <div class="search">
@@ -50,14 +49,14 @@
           </button>
         </div>
 
-        <p id="list-error" class="error" role="alert" hidden></p>
-        <div id="status" class="status" aria-live="polite" data-kind="loading" hidden>
+        <p id="search-status" class="visually-hidden" role="status"></p>
+        <p id="list-error" class="error" role="alert"></p>
+        <div id="status" class="status" aria-live="polite" data-kind="loading">
           <svg class="status-icon" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5M17 5.5a3.5 3.5 0 0 1 0 5.5M18.5 14.8c1.8.7 3 2.3 3.3 4.7"/></svg>
-          <p id="status-message"></p>
-          <div class="skeleton" aria-hidden="true"><i></i><i></i><i></i></div>
+          <p id="status-message">Загрузка…</p>
           <button id="retry-button" class="btn btn-secondary" type="button" hidden>Повторить</button>
         </div>
-        <ul id="users"></ul>
+        <ul id="users" role="list"></ul>
       </section>
     </main>
 
