@@ -11,7 +11,9 @@ export interface User {
   email: string;
 }
 
-export const users: User[] = [
+// Массив и счётчик id не экспортируются: единственный доступ к хранилищу —
+// через функции getAll/create/removeById, чтобы не менять состояние в обход них.
+const users: User[] = [
   { id: 1, name: 'Alex Johnson', email: 'alex.johnson@example.com' },
   { id: 2, name: 'Maria Petrova', email: 'maria.petrova@example.com' },
   { id: 3, name: 'John Smith', email: 'john.smith@example.com' },
@@ -31,7 +33,7 @@ export const users: User[] = [
  * стартового набора новые id остаются уникальными без ручной правки числа.
  * Если массив пуст — старт с 1.
  */
-export let nextId: number =
+let nextId: number =
   users.reduce((max, user) => Math.max(max, user.id), 0) + 1;
 
 /**
@@ -41,3 +43,39 @@ export let nextId: number =
 export function getNextId(): number {
   return nextId++;
 }
+
+/**
+ * Возвращает всех пользователей; при заданном search фильтрует по подстроке
+ * в name (регистронезависимо). Пустая строка считается «без фильтра».
+ */
+export function getAll(search?: string): User[] {
+  if (search) {
+    const needle = search.toLowerCase();
+    return users.filter((user) => user.name.toLowerCase().includes(needle));
+  }
+  return users;
+}
+
+/** Создаёт пользователя с новым id и добавляет его в хранилище. */
+export function create(name: string, email: string): User {
+  const user: User = { id: getNextId(), name, email };
+  users.push(user);
+  return user;
+}
+
+/** Удаляет пользователя по id. Возвращает true, если запись была удалена. */
+export function removeById(id: number): boolean {
+  const index = users.findIndex((user) => user.id === id);
+  if (index === -1) {
+    return false;
+  }
+  users.splice(index, 1);
+  return true;
+}
+
+/** Ищет пользователя по email без учёта регистра. */
+export function findByEmail(email: string): User | undefined {
+  const needle = email.toLowerCase();
+  return users.find((user) => user.email.toLowerCase() === needle);
+}
+

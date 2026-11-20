@@ -2,7 +2,9 @@ import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createReadStream, promises as fs } from 'node:fs';
 import * as path from 'node:path';
-import { sendJson } from './http-utils';
+import { sendJson, sendNoContent, readBody } from './http-utils';
+import { getAll, create, removeById, findByEmail } from './users';
+import { validateCreateUser } from './validation';
 
 const PORT = process.env.PORT ?? 3000;
 
@@ -61,6 +63,69 @@ async function serveStatic(pathname: string, res: ServerResponse): Promise<boole
   return true;
 }
 
+/**
+ * Обрабатывает все запросы под /api.
+ * Валидация входных данных — в validation.ts; здесь только маршрутизация
+ * и маппинг результата на HTTP-статусы.
+ */
+async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
+  try {
+    const { pathname, searchParams } = url;
+    const method = req.method ?? 'GET';
+
+    // GET /api/users — список, опционально отфильтрованный по ?search=
+    if (method === 'GET' && pathname === '/api/users') {
+      const search = searchParams.get('search') ?? undefined;
+      sendJson(res, 200, getAll(search));
+      return;
+    }
+
+    // POST /api/users — валидация, проверка уникальности email, создание.
+    if (method === 'POST' && pathname === '/api/users') {
+      const body = await readBody(req);
+      const result = validateCreateUser(body);
+      if (!result.ok) {
+        sendJson(res, 400, { error: result.error });
+        return;
+      }
+      if (findByEmail(result.data.email)) {
+        sendJson(res, 409, { error: 'Email already exists' });
+        return;
+      }
+      const created = create(result.data.name, result.data.email);
+      sendJson(res, 201, created);
+      return;
+    }
+
+    // DELETE /api/users/:id — удаление по числовому id
+    if (method === 'DELETE' && pathname.startsWith('/api/users/')) {
+      const rawId = pathname.slice('/api/users/'.length);
+      const id = Number(rawId);
+      if (rawId === '' || !Number.isInteger(id)) {
+        sendJson(res, 400, { error: 'Invalid id' });
+        return;
+      }
+      if (removeById(id)) {
+        sendNoContent(res);
+      } else {
+        sendJson(res, 404, { error: 'User not found' });
+      }
+      return;
+    }
+
+    // Всё остальное под /api — не наш маршрут
+    sendJson(res, 404, { error: 'Not found' });
+  } catch (err) {
+    // Невалидный JSON — проблема формата запроса, отвечаем 415.
+    if (err instanceof Error && err.message === 'INVALID_JSON') {
+      sendJson(res, 415, { error: 'Content-Type must be application/json' });
+      return;
+    }
+    console.error(err);
+    sendJson(res, 500, { error: 'Internal server error' });
+  }
+}
+
 const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
   // req.url всегда относительный — второй аргумент служит лишь базой для URL.
   const url = new URL(req.url ?? '/', 'http://localhost');
@@ -68,8 +133,7 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
 
   try {
     if (pathname.startsWith('/api')) {
-      // Эндпоинты ещё не реализованы — честная заглушка.
-      sendJson(res, 501, { error: 'Not implemented' });
+      await handleApi(req, res, url);
       return;
     }
 
@@ -90,3 +154,4 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
+
