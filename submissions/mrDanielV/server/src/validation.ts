@@ -18,36 +18,48 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export function validateCreateUser(
   body: unknown,
 ): { ok: true; data: CreateUserInput } | { ok: false; error: string } {
-  // 1. Тело должно быть JSON-объектом (массивы/null/примитивы не подходят).
+  // Тело должно быть JSON-объектом (массивы/null/примитивы не подходят).
   if (typeof body !== 'object' || body === null || Array.isArray(body)) {
-    return { ok: false, error: 'Body must be a JSON object' };
+    return { ok: false, error: 'Тело запроса должно быть JSON-объектом' };
   }
 
   const record = body as Record<string, unknown>;
 
-  // 2. name обязателен и должен быть строкой.
+  // name обязателен и должен быть строкой.
   const rawName = record.name;
   if (typeof rawName !== 'string') {
-    return { ok: false, error: 'Name is required and must be a string' };
+    return { ok: false, error: 'Имя обязательно и должно быть строкой' };
   }
 
-  // 3. name не должен быть пустой после trim.
+  // name не должен быть пустой после trim.
   const name = rawName.trim();
   if (name === '') {
-    return { ok: false, error: 'Name must not be empty' };
+    return { ok: false, error: 'Укажите ИМЯ' };
   }
 
-  // 4. email обязателен и должен быть строкой.
+  // email обязателен и должен быть строкой.
   const rawEmail = record.email;
   if (typeof rawEmail !== 'string') {
-    return { ok: false, error: 'Email is required and must be a string' };
+    return { ok: false, error: 'Email обязателен и должен быть строкой' };
   }
 
-  // 5. email должен соответствовать простому формату.
+  // email должен соответствовать простому формату.
   const email = rawEmail.trim().toLowerCase();
-  if (!EMAIL_RE.test(email)) {
-    return { ok: false, error: 'Email is invalid' };
+  if (email === '') {
+    return { ok: false, error: 'Укажите EMAIL' };
   }
+  if (!EMAIL_RE.test(email)) {
+    return { ok: false, error: 'Некорректный формат EMAIL' };
+  }
+
+  // Длины значений
+  if (name.length > 50) {
+     return { ok: false, error: 'ИМЯ не должно превышать 50 символов' };
+  }
+  if (email.length > 50) {
+     return { ok: false, error: 'EMAIL не должен превышать 50 символов' };
+  }
+
 
   return { ok: true, data: { name, email } };
 }

@@ -97,10 +97,16 @@ function renderUsers(users: User[]): void {
     const emailCell = document.createElement('td');
     emailCell.textContent = user.email;
 
-    // Колонка действий: кнопку удаления добавим на этапе «удаление».
-    // TODO: добавить кнопку удаления в colActions.
+    // Колонка действий: кнопка удаления. id кладём в data-id,
+    // чтобы делегированный обработчик на tbody знал, кого удалять.
     const colActions = document.createElement('td');
     colActions.className = 'col-actions';
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn btn-delete';
+    deleteBtn.dataset.id = String(user.id);
+    deleteBtn.textContent = 'Удалить';
+    colActions.append(deleteBtn);
 
     tr.append(idCell, nameCell, emailCell, colActions);
     tbody.append(tr);
@@ -141,6 +147,12 @@ async function loadUsers(search?: string, signal?: AbortSignal): Promise<void> {
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 let activeController: AbortController | undefined;
 
+/**
+ * Активный поисковый запрос. Храним, чтобы после создания/удаления
+ * перезагрузить список с учётом фильтра, а не сбрасывать его в «все».
+ */
+let currentSearch = '';
+
 function onSearchInput(): void {
   const input = getElement<HTMLInputElement>('search');
 
@@ -157,17 +169,128 @@ function onSearchInput(): void {
     activeController = controller;
 
     const search = input.value.trim();
+    currentSearch = search;
     void loadUsers(search || undefined, controller.signal);
   }, 300);
+}
+
+/**
+ * Показывает текст в блоке ошибки формы #form-error. null — скрыть.
+ * Отдельно от showError: ошибки формы и ошибки списка — разные блоки.
+ */
+function showFormError(text: string | null): void {
+  const el = getElement<HTMLParagraphElement>('form-error');
+  if (text === null) {
+    el.classList.add('hidden');
+    el.textContent = '';
+  } else {
+    el.textContent = text;
+    el.classList.remove('hidden');
+  }
+}
+
+/** Обработчик создания пользователя (POST /api/users). */
+async function onCreateSubmit(event: SubmitEvent): Promise<void> {
+  event.preventDefault();
+
+  const nameInput = getElement<HTMLInputElement>('name');
+  const emailInput = getElement<HTMLInputElement>('email');
+  const form = getElement<HTMLFormElement>('create-form');
+  const submitBtn = getElement<HTMLButtonElement>('submit-btn');
+
+  nameInput.addEventListener('input', () => showFormError(null));
+  emailInput.addEventListener('input', () => showFormError(null));
+
+
+  const name = nameInput.value.trim();
+  const email = emailInput.value.trim();
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Добавление...';
+  showFormError(null);
+
+  try {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email }),
+    });
+
+    if (response.ok) {
+      form.reset();
+      await loadUsers(currentSearch || undefined);
+    } else {
+      let message = 'Не удалось создать пользователя';
+      try {
+        const data = (await response.json()) as { error?: string };
+        if (data.error) {
+          message = data.error;
+        }
+      } catch {
+        // Тело не JSON — оставляем fallback.
+      }
+      showFormError(message);
+    }
+  } catch {
+    showFormError('Не удалось создать пользователя');
+  } finally {
+    // Всегда разблокируем кнопку — даже при сетевой ошибке/исключении.
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Добавить';
+  }
+}
+
+/** Обработчик удаления (делегирование события click на #users-body). */
+async function onUsersBodyClick(event: MouseEvent): Promise<void> {
+  // closest, т.к. могли кликнуть по тексту/вложенности внутри кнопки.
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return;
+  }
+  const button = target.closest<HTMLButtonElement>('button[data-id]');
+  if (!button) {
+    return;
+  }
+
+  const id = button.dataset.id;
+  if (!id) {
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = 'Удаление...';
+
+  try {
+    const response = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+    if (response.ok) {
+      await loadUsers(currentSearch || undefined);
+    } else {
+      showError('Не удалось удалить пользователя');
+    }
+  } catch {
+    showError('Не удалось удалить пользователя');
+  } finally {
+    // Строка при успехе перерисуется, но при ошибке кнопка должна ожить.
+    button.disabled = false;
+    button.textContent = 'Удалить';
+  }
 }
 
 // Точка входа.
 // Стартовая загрузка без фильтра.
 void loadUsers();
 
+
 // Поиск по имени с debounce и отменой устаревших запросов.
 getElement<HTMLInputElement>('search').addEventListener('input', onSearchInput);
 
-// TODO: обработчик сабмита #create-form (POST /api/users) с блоком #form-error.
-// TODO: делегированный обработчик удаления (DELETE /api/users/:id).
+// Создание пользователя.
+getElement<HTMLFormElement>('create-form').addEventListener('submit', (event) => {
+  void onCreateSubmit(event);
+});
+
+// Удаление через делегирование: один слушатель на tbody, а не на каждой строке.
+getElement<HTMLTableSectionElement>('users-body').addEventListener('click', (event) => {
+  void onUsersBodyClick(event);
+});
 

@@ -89,7 +89,7 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
         return;
       }
       if (findByEmail(result.data.email)) {
-        sendJson(res, 409, { error: 'Email already exists' });
+        sendJson(res, 409, { error: 'Пользователь с таким E-mail уже зарегистрирован' });
         return;
       }
       const created = create(result.data.name, result.data.email);
@@ -122,7 +122,7 @@ async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): P
       return;
     }
     console.error(err);
-    sendJson(res, 500, { error: 'Internal server error' });
+    sendJson(res, 500, { error: 'Ошибка сервера' });
   }
 }
 
@@ -144,7 +144,7 @@ const server = createServer(async (req: IncomingMessage, res: ServerResponse) =>
   } catch {
     // Сюда попадают ошибки стриминга статики и прочие неожиданности.
     if (!res.headersSent) {
-      sendJson(res, 500, { error: 'Internal server error' });
+      sendJson(res, 500, { error: 'Ошибка сервера' });
     } else {
       res.destroy();
     }
