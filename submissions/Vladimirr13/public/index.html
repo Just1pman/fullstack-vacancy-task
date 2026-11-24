@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Пользователи</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">ВАШЕ РАБОЧЕЕ ПРОСТРАНСТВО</p>
+        <h1>Пользователи <span class="gradient-text">в одном месте</span></h1>
+        <p>
+          Добавляйте пользователей и находите нужные контакты за пару секунд.
+        </p>
+      </header>
+      <div class="layout">
+        <section class="panel create-panel" aria-labelledby="create-title">
+          <h2 id="create-title">Новый пользователь</h2>
+          <p class="panel-description">Начните с имени и электронной почты.</p>
+          <form id="create-form" novalidate>
+            <label for="name">Имя</label>
+            <input
+              id="name"
+              name="name"
+              required
+              maxlength="100"
+              autocomplete="name"
+              placeholder="Анна Иванова"
+              aria-describedby="form-error"
+            />
+            <label for="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              maxlength="254"
+              autocomplete="email"
+              placeholder="anna@example.com"
+              aria-describedby="form-error"
+            />
+            <button id="create-button" type="submit">
+              Добавить пользователя
+            </button>
+            <p id="form-error" class="error" role="alert"></p>
+          </form>
+        </section>
+        <section class="panel directory" aria-labelledby="list-title">
+          <div class="section-heading">
+            <h2 id="list-title">Список пользователей</h2>
+            <span id="count" class="count"></span>
+          </div>
+          <label for="search">Поиск по имени</label>
+          <input
+            id="search"
+            type="search"
+            placeholder="Начните вводить имя…"
+            autocomplete="off"
+          />
+          <p id="list-status" role="status"></p>
+          <div id="list-error" hidden>
+            <p class="error" role="alert" id="list-error-message"></p>
+            <button id="retry" class="secondary" type="button">
+              Повторить загрузку
+            </button>
+          </div>
+          <p id="action-error" class="error" role="alert"></p>
+          <ul id="users" aria-label="Пользователи"></ul>
+        </section>
+      </div>
+      <div id="notice" class="toast" hidden>
+        <span class="toast-icon" aria-hidden="true">✓</span>
+        <p id="notice-message" role="status" aria-atomic="true"></p>
+        <button
+          id="notice-close"
+          class="toast-close"
+          type="button"
+          aria-label="Закрыть уведомление"
+        >
+          ×
+        </button>
+      </div>
+      <noscript>Для работы приложения включите JavaScript.</noscript>
+    </main>
+  </body>
+</html>
