@@ -1,0 +1,40 @@
+.users-search {
+  position: relative;
+  min-width: 0;
+}
+
+.users-search__input {
+  --input-padding-right: 56px;
+
+  display: block;
+  width: 100%;
+}
+
+.users-search__icon,
+.users-search__clear {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 100%;
+  color: var(--color-neutral-500);
+}
+
+.users-search__icon {
+  pointer-events: none;
+}
+
+.users-search__clear {
+  padding: 0;
+  border: 0;
+  border-radius: var(--control-radius);
+  background: transparent;
+  cursor: pointer;
+}
+
+.users-search__clear:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: -4px;
+}

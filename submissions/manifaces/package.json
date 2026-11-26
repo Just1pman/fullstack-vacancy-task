@@ -1,0 +1,19 @@
+{
+  "name": "user-management",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:frontend": "vite frontend",
+    "build:frontend": "tsc -p frontend/tsconfig.json && vite build frontend",
+    "build:backend": "tsc -p backend/tsconfig.json",
+    "dev:backend": "npm run build:backend && node backend/dist/main.js",
+    "build": "npm run build:frontend && npm run build:backend",
+    "prestart": "npm run build",
+    "start": "node backend/dist/main.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.6",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8"
+  }
+}

@@ -1,0 +1,127 @@
+.user-form__toggle {
+  --button-padding: 0;
+
+  width: 100%;
+  white-space: nowrap;
+}
+
+.user-form__toggle > svg {
+  flex-shrink: 0;
+}
+
+.user-form__fields,
+.user-form__field {
+  display: grid;
+}
+
+.user-form__fields {
+  gap: 16px;
+}
+
+.user-form__field {
+  min-width: 0;
+}
+
+.user-form__label,
+.user-form__error {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.user-form__label {
+  padding-bottom: 8px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.user-form__control {
+  position: relative;
+  min-width: 0;
+}
+
+.user-form__input {
+  --input-padding-right: 56px;
+
+  display: block;
+  width: 100%;
+}
+
+.user-form__clear {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--control-radius);
+  background: transparent;
+  color: var(--color-neutral-500);
+  cursor: pointer;
+}
+
+.user-form__clear:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: -4px;
+}
+
+.user-form__control:not(:focus-within) > .user-form__clear,
+.user-form__input:placeholder-shown + .user-form__clear,
+.user-form__input:disabled + .user-form__clear {
+  display: none;
+}
+
+.user-form__error {
+  margin-top: 4px;
+  color: var(--color-error);
+  overflow-wrap: anywhere;
+}
+
+.user-form__message {
+  margin-top: 16px;
+}
+
+.user-form__submit {
+  position: relative;
+  width: 100%;
+}
+
+.user-form__submit > .spinner {
+  position: absolute;
+  top: 0;
+  right: 10px;
+  bottom: 0;
+  margin: auto 0;
+  color: var(--color-primary-500);
+}
+
+@media (width >= 768px) {
+  .user-form__toggle {
+    width: 152px;
+  }
+
+  .user-form__fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+    align-items: start;
+  }
+
+  .user-form__submit {
+    width: 160px;
+    margin-top: 28px;
+  }
+
+  .user-form__submit > .spinner {
+    right: 16px;
+  }
+}
+
+@media (width >= 1280px) {
+  .user-form__toggle {
+    width: 168px;
+  }
+
+  .user-form__submit {
+    width: 160px;
+  }
+}
