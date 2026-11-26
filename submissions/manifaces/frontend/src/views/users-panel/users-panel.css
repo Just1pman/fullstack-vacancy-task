@@ -1,0 +1,120 @@
+.users-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.users-panel__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.users-panel__user {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-neutral-200);
+}
+
+.users-panel__details {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.users-panel__email,
+.users-panel__error {
+  margin-top: 4px;
+}
+
+.users-panel__email {
+  color: var(--color-neutral-500);
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.users-panel__delete {
+  --control-size: 48px;
+  --button-padding: 0;
+
+  flex-shrink: 0;
+  width: var(--control-size);
+  color: var(--color-neutral-500);
+}
+
+.users-panel__delete:hover:not(:disabled),
+.users-panel__delete:active:not(:disabled) {
+  background: var(--color-error-light);
+  color: var(--color-error);
+}
+
+.users-panel__delete:active:not(:disabled) {
+  border-color: var(--color-error);
+}
+
+.users-panel__delete:disabled {
+  color: var(--color-neutral-500);
+}
+
+.users-panel__delete > .spinner {
+  color: var(--color-primary-500);
+}
+
+.users-panel__placeholder {
+  display: grid;
+  flex: 1;
+  grid-template-rows: 1fr auto auto 1fr;
+  justify-items: center;
+  min-height: 184px;
+  padding: 24px;
+}
+
+.users-panel__icon {
+  --icon-size: 40px;
+
+  display: grid;
+  grid-row: 2;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  margin-bottom: 16px;
+}
+
+.users-panel__icon > svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-neutral-500);
+}
+
+.users-panel__icon > .spinner {
+  color: var(--color-primary-500);
+}
+
+.users-panel_error .users-panel__icon > svg {
+  color: var(--color-error);
+}
+
+.users-panel__text {
+  grid-row: 3;
+  text-align: center;
+}
+
+.users-panel__retry {
+  --control-size: 48px;
+
+  grid-row: 4;
+  align-self: start;
+  width: 112px;
+  margin-top: 8px;
+  color: var(--color-primary-600);
+  text-decoration: underline;
+}
+
+.users-panel__retry:hover:not(:disabled) {
+  background: var(--color-primary-50);
+}
+
+.users-panel__retry:active:not(:disabled) {
+  background: var(--color-primary-100);
+}

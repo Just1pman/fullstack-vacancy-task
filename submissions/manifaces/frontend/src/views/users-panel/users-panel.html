@@ -1,0 +1,40 @@
+<div class="app__panel users-panel">
+  <ul class="users-panel__list" hidden></ul>
+
+  <div class="users-panel__placeholder" hidden>
+    <span class="users-panel__icon">
+      <svg class="spinner" width="24" height="24">
+        <use href="#icon-loader"></use>
+      </svg>
+    </span>
+
+    <p class="users-panel__text">Загрузка пользователей</p>
+
+    <button class="button users-panel__retry" type="button" hidden>
+      Повторить
+    </button>
+  </div>
+
+  <template data-template="user">
+    <li class="users-panel__user">
+      <div class="users-panel__details">
+        <p class="users-panel__name" data-field="name"></p>
+        <p class="users-panel__email" data-field="email"></p>
+
+        <div class="message message_error users-panel__error" hidden>
+          <svg width="24" height="24">
+            <use href="#icon-error"></use>
+          </svg>
+
+          <span data-field="delete-error-text"></span>
+        </div>
+      </div>
+
+      <button class="button users-panel__delete" data-action="delete" type="button">
+        <svg width="24" height="24">
+          <use href="#icon-delete"></use>
+        </svg>
+      </button>
+    </li>
+  </template>
+</div>

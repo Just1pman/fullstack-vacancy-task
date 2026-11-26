@@ -1,0 +1,78 @@
+<button class="button button_primary app__toggle user-form__toggle" type="button">
+  <svg width="24" height="24">
+    <use href="#icon-plus"></use>
+  </svg>
+  <span>Добавить</span>
+</button>
+
+<form class="app__form user-form" novalidate hidden>
+  <fieldset class="user-form__fields">
+    <div class="user-form__field">
+      <label class="user-form__label" for="user-name">Имя</label>
+      <div class="user-form__control">
+        <input
+          class="input user-form__input"
+          id="user-name"
+          name="name"
+          type="text"
+          autocomplete="name"
+          placeholder="Введите имя"
+        >
+
+        <button
+          class="user-form__clear"
+          type="button"
+          aria-label="Очистить имя"
+        >
+          <svg width="24" height="24">
+            <use href="#icon-close"></use>
+          </svg>
+        </button>
+      </div>
+      <p class="user-form__error" id="user-name-error" hidden></p>
+    </div>
+
+    <div class="user-form__field">
+      <label class="user-form__label" for="user-email">Email</label>
+      <div class="user-form__control">
+        <input
+          class="input user-form__input"
+          id="user-email"
+          name="email"
+          type="text"
+          inputmode="email"
+          autocomplete="email"
+          placeholder="name@example.com"
+        >
+
+        <button
+          class="user-form__clear"
+          type="button"
+          aria-label="Очистить email"
+        >
+          <svg width="24" height="24">
+            <use href="#icon-close"></use>
+          </svg>
+        </button>
+      </div>
+      
+      <p class="user-form__error" id="user-email-error" hidden></p>
+    </div>
+
+    <button class="button button_primary user-form__submit" type="submit">
+      Добавить
+
+      <svg class="spinner" width="24" height="24" hidden>
+        <use href="#icon-loader"></use>
+      </svg>
+    </button>
+  </fieldset>
+
+  <div class="message message_success user-form__message" hidden>
+    <svg width="24" height="24">
+      <use href="#icon-success"></use>
+    </svg>
+
+    <span data-field="message-text"></span>
+  </div>
+</form>

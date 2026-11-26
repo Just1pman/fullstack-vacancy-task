@@ -1,0 +1,116 @@
+@import "./theme/variables.css";
+@import "./theme/button.css";
+@import "./theme/input.css";
+@import "./theme/message.css";
+@import "./theme/spinner.css";
+@import "./views/users-search/users-search.css";
+@import "./views/user-form/user-form.css";
+@import "./views/users-panel/users-panel.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--color-neutral-0);
+  color: var(--color-neutral-800);
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+}
+
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+p {
+  margin: 0;
+}
+
+.app {
+  --layout-content-max-width: 1376px;
+  --layout-horizontal-padding: 16px;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100dvh;
+  max-width: calc(var(--layout-content-max-width) + var(--layout-horizontal-padding) * 2);
+  padding: 0 var(--layout-horizontal-padding) 24px;
+  margin: 0 auto;
+}
+
+.app__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+  background: var(--color-neutral-0);
+  border-bottom: 1px solid var(--color-neutral-200);
+}
+
+.app__title {
+  margin: 0 0 24px;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.app__toggle {
+  margin-top: 12px;
+}
+
+.app__form {
+  margin-top: 24px;
+}
+
+.app__panel {
+  flex: 1;
+}
+
+@media (width >= 768px) {
+  .app {
+    --layout-horizontal-padding: 24px;
+
+    padding-bottom: 32px;
+  }
+
+  .app__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 16px;
+    padding-top: 32px;
+  }
+
+  .app__title,
+  .app__form {
+    grid-column: 1 / -1;
+  }
+
+  .app__title {
+    font-size: 32px;
+    line-height: 40px;
+  }
+
+  .app__toggle {
+    margin-top: 0;
+  }
+}
+
+@media (width >= 1280px) {
+  .app {
+    --layout-horizontal-padding: 32px;
+  }
+}
